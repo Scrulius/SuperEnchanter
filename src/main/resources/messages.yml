@@ -10,10 +10,10 @@
 # ANVIL GUI
 # ─────────────────────────────────────────────
 anvil:
-  gui-title: "<gradient:#FFB347:#FF8C00><bold>Yunque</bold></gradient>"
+  gui-title: "<gradient:#8A4A12:#E0922F><bold>Yunque</bold></gradient>"
 
   # Info icon (slot 13)
-  info-name: "<gradient:#FFB347:#FF8C00><bold>Información</bold></gradient>"
+  info-name: "<gradient:#8A4A12:#E0922F><bold>Información</bold></gradient>"
   info-lore:
     - "<#A8B2D1>Coloca un ítem en la izquierda"
     - "<#A8B2D1>y un libro o ítem con encantamientos"
@@ -31,11 +31,11 @@ anvil:
   close-lore: "<#6C7293>Clic para cerrar"
 
   # Input labels (sit above each slot)
-  item-label-name: "<gradient:#64DFDF:#38D9A9><bold>⬇ Tu objeto</bold></gradient>"
+  item-label-name: "<gradient:#0E6E73:#46C7C7><bold>⬇ Tu objeto</bold></gradient>"
   item-label-lore:
     - "<#A8B2D1>Coloca aquí el objeto"
     - "<#A8B2D1>que quieres mejorar."
-  sacrifice-label-name: "<gradient:#FFB347:#FF8C00><bold>⬇ Sacrificio</bold></gradient>"
+  sacrifice-label-name: "<gradient:#8A4A12:#E0922F><bold>⬇ Sacrificio</bold></gradient>"
   sacrifice-label-lore:
     - "<#A8B2D1>Un libro encantado u otro"
     - "<#A8B2D1>objeto con encantamientos."
@@ -51,7 +51,7 @@ anvil:
     - "<#A8B2D1>compatibles para ver el resultado."
 
   # Dedicated forge button
-  forge-ready-name: "<gradient:#43E97B:#38D9A9><bold>▶ Forjar</bold></gradient>"
+  forge-ready-name: "<gradient:#1E7A4D:#46D08A><bold>▶ Forjar</bold></gradient>"
   forge-ready-lore:
     - "<#A8B2D1>Coste: <#FFB347>{cost}"
     - ""
@@ -97,10 +97,10 @@ anvil:
 # ENCHANTING TABLE GUI
 # ─────────────────────────────────────────────
 enchanting:
-  gui-title: "<gradient:#C084FC:#7C3AED><bold>Mesa de Encantamientos</bold></gradient>"
+  gui-title: "<gradient:#4C1D95:#9D5BE0><bold>Mesa de Encantamientos</bold></gradient>"
 
   # Table decoration icon — etiqueta del slot de input (flecha ➜ hacia él, como el sello).
-  table-deco-name: "<gradient:#C084FC:#7C3AED><bold>Mesa de Encantamientos ➜</bold></gradient>"
+  table-deco-name: "<gradient:#4C1D95:#9D5BE0><bold>Mesa de Encantamientos ➜</bold></gradient>"
   table-deco-lore:
     - "<#A8B2D1>Coloca un ítem en el slot"
     - "<#A8B2D1>de la derecha para ver sus"
@@ -123,7 +123,7 @@ enchanting:
     - "<#FFD93D>▶ <#43E97B>Clic para ver"
 
   # Guide book — explicación completa (líneas cortas para que no se desborden).
-  guide-name: "<gradient:#43E97B:#38D9A9><bold>📖 Cómo encantar</bold></gradient>"
+  guide-name: "<gradient:#1E7A4D:#46D08A><bold>📖 Cómo encantar</bold></gradient>"
   guide-lore:
     - "<#C084FC><bold>1 · Pasos</bold>"
     - "<#A8B2D1>Pon un ítem en el slot."
@@ -174,7 +174,7 @@ enchanting:
   magia-locked: "<#FF6B6B>✘ <#A8B2D1>Necesitas <#C084FC>Magia nivel {level}<#A8B2D1> para encantar esta rareza."
 
   # Etiqueta del slot de POTENCIADOR (solo aparece con success-chance activo).
-  booster-label-name: "<gradient:#C084FC:#7C3AED><bold>Sello ➜</bold></gradient>"
+  booster-label-name: "<gradient:#4C1D95:#9D5BE0><bold>Sello ➜</bold></gradient>"
   booster-label-lore:
     - "<#A8B2D1>Mete a la derecha un <#C084FC>Sello<#A8B2D1> de"
     - "<#A8B2D1>rareza para garantizar ese encantamiento."
@@ -199,7 +199,7 @@ enchanting:
 
   # Bookshelf power icon. {current}=total, {vanilla}=estanterías normales (con tope),
   # {library}=librerías encantadas, {max}=poder máximo.
-  power-name: "<gradient:#64DFDF:#38D9A9><bold>✦ Poder de Estantería</bold></gradient>"
+  power-name: "<gradient:#0E6E73:#46C7C7><bold>✦ Poder de Estantería</bold></gradient>"
   power-lore:
     - "<#6C7293>Poder total: <#E8E8FF>{current}<#6C7293>/{max}"
     - ""
@@ -223,10 +223,10 @@ enchanting:
 # ENCHANTMENT TRANSFER GUI (grindstone)
 # ─────────────────────────────────────────────
 transfer:
-  gui-title: "<gradient:#C084FC:#7C3AED><bold>✦ Transferencia de Encantamientos ✦</bold></gradient>"
+  gui-title: "<gradient:#4C1D95:#9D5BE0><bold>Transferir / Extraer</bold></gradient>"
 
   # ── Zona DONANTE (izquierda, rojo = se consume) ──
-  donor-name: "<gradient:#FF6B6B:#FF8C00><bold>⬇ Donante</bold></gradient>"
+  donor-name: "<gradient:#7A1F1F:#E0564B><bold>⬇ Donante</bold></gradient>"
   donor-lore:
     - "<#A8B2D1>Coloca aquí el objeto del que"
     - "<#A8B2D1>quieres sacar un encantamiento."
@@ -234,7 +234,7 @@ transfer:
     - "<#FFD93D>⚠ <#FF6B6B>Se consume por completo."
 
   # ── Zona DESTINO (derecha, verde = recibe) ──
-  target-name: "<gradient:#43E97B:#38D9A9><bold>⬇ Destino</bold></gradient>"
+  target-name: "<gradient:#1E7A4D:#46D08A><bold>⬇ Destino</bold></gradient>"
   target-lore:
     - "<#A8B2D1>Coloca aquí el objeto que"
     - "<#A8B2D1>recibirá los encantamientos."
@@ -252,7 +252,7 @@ transfer:
     - "<#C084FC>▸ <#A8B2D1>Destino = libro: extraes a libro."
 
   # Info / close.
-  info-name: "<gradient:#C084FC:#7C3AED><bold>¿Cómo funciona?</bold></gradient>"
+  info-name: "<gradient:#4C1D95:#9D5BE0><bold>¿Cómo funciona?</bold></gradient>"
   info-lore:
     - "<#A8B2D1>Saca <#43E97B>los encantamientos que quieras<#A8B2D1>"
     - "<#A8B2D1>de un objeto donante (que <#FF6B6B>se consume<#A8B2D1>):"
@@ -289,7 +289,7 @@ transfer:
   blocked-not-applicable: "<#FF6B6B>✘ No se puede aplicar a este objeto"
 
   # Botón de transferir.
-  button-ready-name: "<gradient:#43E97B:#38D9A9><bold>▶ Transferir</bold></gradient>"
+  button-ready-name: "<gradient:#1E7A4D:#46D08A><bold>▶ Transferir</bold></gradient>"
   button-ready-lore:
     - "<#A8B2D1>Mover <#43E97B>{count}<#A8B2D1> encantamiento(s) al destino."
     - "<#A8B2D1>Coste total: <#FFB347>{cost}"
@@ -302,7 +302,7 @@ transfer:
     - "<#6C7293>encantamientos de la lista."
 
   # Botón de extraer a libro (modo sin destino).
-  extract-button-ready-name: "<gradient:#C084FC:#7C3AED><bold>▶ Extraer a libro</bold></gradient>"
+  extract-button-ready-name: "<gradient:#4C1D95:#9D5BE0><bold>▶ Extraer a libro</bold></gradient>"
   extract-button-ready-lore:
     - "<#A8B2D1>Sacar <#43E97B>{count}<#A8B2D1> encantamiento(s) a un libro."
     - "<#A8B2D1>Coste total: <#FFB347>{cost}"
@@ -327,7 +327,7 @@ transfer:
 # ─────────────────────────────────────────────
 enchant-icons:
   # Maxed enchantment (gold, glowing book)
-  maxed-name: "<gradient:#FFB347:#FF8C00><bold>{name}</bold></gradient>"
+  maxed-name: "<gradient:#8A4A12:#E0922F><bold>{name}</bold></gradient>"
   maxed-lore:
     - "<#FFD93D>✦ <#FFB347>MÁXIMO"
     - ""
@@ -382,7 +382,7 @@ enchant-icons:
   # repetirlos bajo cada encantamiento. Placeholders: {level} nivel de Magia, {success}
   # +% éxito, {discount} -% coste, {refund} % reembolso, {xp} +% XP de Magia total
   # (de cualquier fuente: armadura, boosters, etc.). El maná no se usa en la mesa.
-  stats-head-name: "<gradient:#C084FC:#7C3AED><bold>Mis estadísticas</bold></gradient>"
+  stats-head-name: "<gradient:#4C1D95:#9D5BE0><bold>Mis estadísticas</bold></gradient>"
   stats-head-lore:
     - "<#6C7293>Nivel de <#C084FC>Magia<#6C7293>: <#E8E8FF>{level}"
     - ""
