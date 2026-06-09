@@ -37,24 +37,24 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     // ── Slot constants ──────────────────────────────────────────────────────
     /** Player-head panel with the viewer's Magia bonuses (top-centre; only when Magia is active). */
     private static final int SLOT_STATS = 4;
-    private static final int SLOT_INPUT = 19;
-    /** Enchanting-table icon, sitting to the LEFT of the input (mirrors the seal label/slot). */
-    private static final int SLOT_TABLE_DECO = 18;
-    /** Decorative label that points at the potentiator slot (only when chance is enabled). */
-    private static final int SLOT_BOOSTER_LABEL = 36;
-    /** Input slot for an optional MythicMobs potentiator (only when chance is enabled). */
-    private static final int SLOT_BOOSTER = 37;
+    /** Item-to-enchant input (col 2); the table icon sits to its left. */
+    private static final int SLOT_INPUT = 20;
+    /** Enchanting-table icon, to the LEFT of the input. */
+    private static final int SLOT_TABLE_DECO = 19;
+    /** Decorative label/icon for the seal, to the LEFT of the seal slot (only with chance on). */
+    private static final int SLOT_BOOSTER_LABEL = 28;
+    /** Seal/potentiator input (col 2, row below the input — top-aligned with the offer grid). */
+    private static final int SLOT_BOOSTER = 29;
     private static final int SLOT_POWER = 48;
     private static final int SLOT_CLOSE = 49; // also acts as back button
-    /** Help/description book, to the RIGHT of the enchantment grid ("aquí aparecen..."). */
-    private static final int SLOT_GUIDE = 26;
+    private static final int SLOT_GUIDE = 50;
     private static final int SLOT_PREV_PAGE = 46;
     private static final int SLOT_NEXT_PAGE = 52;
 
-    /** Ordered list of slots used to display offers (2 rows of 5). */
+    /** Ordered list of slots used to display offers (2 rows of 4, shifted right). */
     private static final List<Integer> OFFER_SLOTS = List.of(
-            21, 22, 23, 24, 25,   // row 2
-            30, 31, 32, 33, 34    // row 3
+            22, 23, 24, 25,   // row 2
+            31, 32, 33, 34    // row 3
     );
     private static final Set<Integer> OFFER_SLOTS_SET = Set.copyOf(OFFER_SLOTS);
 
