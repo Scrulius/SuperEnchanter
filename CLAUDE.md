@@ -156,7 +156,7 @@ Las dos comparten layout para que se lean igual: fondo **negro** (`BLACK_STAINED
   + "espada de diamante concentrada"), que vanilla nunca permitió. Se valida en preview Y en forge (el
   botón es clicable siempre). Barrera `anvil.different-items-*` cuando no casa.
 
-### Mesa de encantamientos (EnchantingGUI) — 2 niveles, COMPACTA (27 slots / 3 filas)
+### Mesa de encantamientos (EnchantingGUI) — 2 niveles (54 slots)
 **Rediseño hardcore (2026-06)**: progresión **secuencial obligatoria** — el único nivel comprable es
 el SIGUIENTE (I→II→III…, sin saltos); **el icono del encantamiento ES el botón de intento** (se
 eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunque falle.
@@ -191,8 +191,8 @@ eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunq
   (`appliesToItem` + clasificación con lookups O(1) en los sets ya hechos). Lo guarda el plugin
   (`getEnchantmentIndex()`, build eager en `onEnable` tras el self-check, lazy como fallback; salta
   bajo MockBukkit porque toca eco). El GUI sigue cacheando el `analyze()` por ítem encima de esto.
-- **Requisitos de uso visibles ANTES de encantar**: los iconos (tier-2 lista y tier-3 niveles)
-  añaden las **líneas de requisito** del encantamiento vía `EcoEnchantsHook.getRequirementLines(ench)`
+- **Requisitos de uso visibles ANTES de encantar**: los iconos de encantamiento (tier-2, que ya
+  muestran el siguiente nivel) añaden las **líneas de requisito** vía `EcoEnchantsHook.getRequirementLines(ench)`
   (`EnchantingLogic.appendRequirementLines`). ⚠️ Gotcha clave: los `not-met-lines` (p.ej. "Requiere
   Combate XV" de un gate `has_skill_level`) **NO** forman parte de `getFormattedDescription` — en el
   ítem real los pinta el módulo de display de EcoEnchants llamando a
@@ -415,11 +415,12 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   Se dan con `/se book tunica_de_mago 1` / `/se book sombrero_de_mago 1`.
   Files: `Ecoenchants_Old/enchants/{raro/tunica_de_mago,legendario/sombrero_de_mago}.yml` (catálogo
   canónico) + desplegados en `plugins/EcoEnchants/enchants/` del server de pruebas.
-- **Reembolso Arcano** (sub-habilidad, `enchanting.magia.refund`): al FALLAR un peldaño, prob.
+- **Reembolso Arcano** (sub-habilidad, `enchanting.magia.refund`): al FALLAR un intento, prob.
   `min(max-percent, nivel*per-level)` (default 0.6/nivel, tope 30% a nivel 50) de **recuperar el
-  coste** de ese peldaño — `CostService.refund` (XP: `setLevel+`; Vault: `deposit`; PP: `give`).
-  Suaviza el sumidero del `success-chance`. Feedback: `enchant-fail-refund` (primer peldaño) o
-  sufijo `refund-suffix` (`{refund}` en el parcial).
+  coste** del intento — `CostService.refund` (XP: reintegro en PUNTOS vía
+  `setExperienceLevelAndProgress`; Vault: `deposit`; PP: `give`). Suaviza el sumidero del
+  `success-chance`. Feedback: `enchant-fail-refund` (fallo sin downgrade) o sufijo `refund-suffix`
+  (`{refund}`, anexado al feedback de downgrade).
 - **Visibilidad de los bonus = cabeza de estadísticas (NO por icono)**: los bonus de Magia ya NO se
   listan bajo cada encantamiento (se quitó `appendMagiaLore`/`magia-line`); el coste/probabilidad del
   icono ya salen CON los bonus aplicados (`effectiveCost`+`applyDiscount`, y `appendChanceLore` suma el
@@ -627,7 +628,8 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
   se bloquean (holder no es `AbstractCustomGUI`).
 - **Sonidos por acción**: transferir/extraer ya NO comparten sonido con encantar
   (`transfer-success`/`extract-success`); abrir/cerrar usa barrel, no cofre. **`enchant-fail`**
-  (sonido + partícula `LARGE_SMOKE`) para el fallo del encantamiento probabilístico.
+  (sonido + partícula `LARGE_SMOKE`) para el fallo del encantamiento probabilístico, y
+  **`enchant-downgrade`** (`entity.item.break` grave) para el fallo que además baja un nivel.
 
 ---
 
