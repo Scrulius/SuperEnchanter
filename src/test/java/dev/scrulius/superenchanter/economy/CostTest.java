@@ -47,9 +47,10 @@ class CostTest {
     class Display {
 
         @Test
-        @DisplayName("XP renders as whole levels")
+        @DisplayName("XP renders as grouped raw points")
         void xp() {
             assertEquals("39 XP", Cost.xp(39).displayText());
+            assertEquals("1,250 XP", Cost.xp(1250).displayText());
         }
 
         @Test

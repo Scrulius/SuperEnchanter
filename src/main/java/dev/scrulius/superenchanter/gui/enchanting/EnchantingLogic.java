@@ -534,7 +534,8 @@ public final class EnchantingLogic {
 
         if (canAfford && hasEnoughPower) {
             lore.add(msg.format("enchant-icons.available-lore-cost",
-                    Map.of("{cost}", cost.displayText())));
+                    Map.of("{cost}", cost.displayText(),
+                            "{levels}", xpLevelsHint(cost, player, plugin))));
             lore.add(msg.format("enchant-icons.available-lore-power",
                     Map.of("{power}", String.valueOf(step.requiredPower()))));
             lore.add("");
@@ -617,6 +618,30 @@ public final class EnchantingLogic {
                 }
             }
         }
+    }
+
+    /**
+     * The "(≈ N niveles para ti)" suffix for an XP point cost: how many experience
+     * levels the deduction would REALLY take from this player right now (vanilla
+     * curve, player-aware — the same points hit harder at low levels). Costs are
+     * shown in raw points (the honest unit since charging levels was exploitable);
+     * this line translates them back into the unit players think in. Empty for
+     * non-XP costs.
+     */
+    @NotNull
+    private static String xpLevelsHint(@NotNull Cost cost,
+                                       @NotNull Player player,
+                                       @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
+        if (cost.type() != dev.scrulius.superenchanter.economy.CostType.XP) {
+            return "";
+        }
+        final MessagesConfig msg = plugin.getMessages();
+        final int levels = plugin.getCostService().xpLevelsEquivalent(player, cost);
+        if (levels <= 0) {
+            return msg.raw("enchant-icons.lore-cost-levels-sub1");
+        }
+        return msg.format("enchant-icons.lore-cost-levels",
+                Map.of("{levels}", String.valueOf(levels)));
     }
 
     /** Formats a percent that may carry decimals: {@code 3.0 → "3"}, {@code 0.5 → "0.5"}. */

@@ -70,10 +70,15 @@ public final class CostService {
     /**
      * @return whether the player can currently pay the cost. A cost in a currency
      *         whose plugin is absent is never affordable.
+     * <p>
+     * XP costs are denominated in raw XP <b>points</b>, NOT levels — charging
+     * levels was dishonest economy-wise: a level costs very few points at low
+     * player levels, so paying "8 levels" repeatedly from a low level was nearly
+     * free in real XP. Points make every attempt cost the same, always.
      */
     public boolean canAfford(@NotNull Player player, @NotNull Cost cost) {
         return switch (cost.type()) {
-            case XP -> player.getLevel() >= cost.intAmount();
+            case XP -> player.calculateTotalExperiencePoints() >= cost.intAmount();
             case VAULT -> {
                 var vault = plugin.getVaultHook();
                 yield vault.isEnabled() && vault.getBalance(player) >= cost.amount();
@@ -88,17 +93,20 @@ public final class CostService {
     /**
      * Charges the player for the cost. Returns {@code false} without taking
      * anything when the player cannot pay or the currency's plugin is absent.
+     * XP is charged in raw points via Paper's native total-XP API, which
+     * recomputes level + progress on the vanilla curve.
      *
      * @return whether the charge succeeded
      */
     public boolean deduct(@NotNull Player player, @NotNull Cost cost) {
         return switch (cost.type()) {
             case XP -> {
-                int required = cost.intAmount();
-                if (player.getLevel() < required) {
+                final int required = cost.intAmount();
+                final int total = player.calculateTotalExperiencePoints();
+                if (total < required) {
                     yield false;
                 }
-                player.setLevel(player.getLevel() - required);
+                player.setExperienceLevelAndProgress(total - required);
                 yield true;
             }
             case VAULT -> {
@@ -122,7 +130,8 @@ public final class CostService {
     public boolean refund(@NotNull Player player, @NotNull Cost cost) {
         return switch (cost.type()) {
             case XP -> {
-                player.setLevel(player.getLevel() + cost.intAmount());
+                player.setExperienceLevelAndProgress(
+                        player.calculateTotalExperiencePoints() + cost.intAmount());
                 yield true;
             }
             case VAULT -> {
@@ -137,12 +146,28 @@ public final class CostService {
     }
 
     /**
+     * How many experience LEVELS paying an XP cost would actually take from this
+     * player right now — the honest feedback shown next to point costs
+     * ("≈ N niveles"). {@code 0} for non-XP costs or when the hit is less than a
+     * full level.
+     */
+    public int xpLevelsEquivalent(@NotNull Player player, @NotNull Cost cost) {
+        if (cost.type() != CostType.XP) {
+            return 0;
+        }
+        return XpMath.levelsLost(player.getLevel(),
+                player.calculateTotalExperiencePoints(), cost.intAmount());
+    }
+
+    /**
      * @return the player's current balance in the given currency, formatted the
-     *         same way a {@link Cost} renders (e.g. {@code "12 XP"}, {@code "$1,500"})
+     *         same way a {@link Cost} renders. XP shows raw points plus the
+     *         player's level for context, e.g. {@code "1,530 XP (nivel 27)"}.
      */
     public @NotNull String balanceText(@NotNull Player player, @NotNull CostType type) {
         return switch (type) {
-            case XP -> player.getLevel() + " XP";
+            case XP -> new Cost(CostType.XP, player.calculateTotalExperiencePoints()).displayText()
+                    + " (nivel " + player.getLevel() + ")";
             case VAULT -> new Cost(CostType.VAULT, plugin.getVaultHook().getBalance(player)).displayText();
             case PLAYER_POINTS -> new Cost(CostType.PLAYER_POINTS,
                     plugin.getPlayerPointsHook().getBalance(player)).displayText();

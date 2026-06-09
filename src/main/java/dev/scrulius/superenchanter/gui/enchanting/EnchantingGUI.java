@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A compact 27-slot (3-row) custom enchanting GUI with a 2-tier flow:
+ * A 54-slot custom enchanting GUI with a 2-tier flow:
  * <ol>
  *   <li><b>Categories</b> — the EcoEnchants types applicable to the input item.</li>
  *   <li><b>Enchantments</b> — each icon shows the NEXT level, its exact success
@@ -36,25 +36,28 @@ import java.util.concurrent.ThreadLocalRandom;
  * Progression is strictly sequential (I → II → ... — no level jumping), the only
  * resource consumed is XP, and a failed attempt may additionally downgrade the
  * enchantment one level (the hardcore penalty). The close button doubles as a
- * "back" button at tier 2.
+ * "back" button at tier 2. (The rarity-seal slot was removed with the seals.)
  */
 public final class EnchantingGUI extends AbstractCustomGUI {
 
-    // ── Slot constants (3 rows, 0-26) ───────────────────────────────────────
-    /** Player-head panel with the viewer's Magia bonuses (only when Magia is active). */
-    private static final int SLOT_STATS = 2;
-    /** Enchanting-table label, pointing ➜ at the input to its right. */
-    private static final int SLOT_TABLE_DECO = 3;
-    /** Item-to-enchant input (top centre). */
-    private static final int SLOT_INPUT = 4;
-    private static final int SLOT_POWER = 6;
-    private static final int SLOT_GUIDE = 8;
-    private static final int SLOT_PREV_PAGE = 18;
-    private static final int SLOT_CLOSE = 22; // also acts as back button
-    private static final int SLOT_NEXT_PAGE = 26;
+    // ── Slot constants ──────────────────────────────────────────────────────
+    /** Player-head panel with the viewer's Magia bonuses (top-centre; only when Magia is active). */
+    private static final int SLOT_STATS = 4;
+    /** Enchanting-table icon, to the LEFT of the input. */
+    private static final int SLOT_TABLE_DECO = 19;
+    /** Item-to-enchant input (col 2); the table icon sits to its left. */
+    private static final int SLOT_INPUT = 20;
+    private static final int SLOT_POWER = 48;
+    private static final int SLOT_CLOSE = 49; // also acts as back button
+    private static final int SLOT_GUIDE = 50;
+    private static final int SLOT_PREV_PAGE = 46;
+    private static final int SLOT_NEXT_PAGE = 52;
 
-    /** Ordered list of slots used to display offers (middle row). */
-    private static final List<Integer> OFFER_SLOTS = List.of(10, 11, 12, 13, 14, 15, 16);
+    /** Ordered list of slots used to display offers (2 rows of 4, shifted right). */
+    private static final List<Integer> OFFER_SLOTS = List.of(
+            22, 23, 24, 25,   // row 2
+            31, 32, 33, 34    // row 3
+    );
     private static final Set<Integer> OFFER_SLOTS_SET = Set.copyOf(OFFER_SLOTS);
 
     /** MiniMessage tags for the Magia-level and bookshelf-power progress bars. */
@@ -90,7 +93,7 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     public EnchantingGUI(@NotNull SuperEnchanterPlugin plugin,
                          @NotNull Player player,
                          @NotNull Block tableBlock) {
-        super(plugin, player, plugin.getMessages().parsed("enchanting.gui-title"), 27);
+        super(plugin, player, plugin.getMessages().parsed("enchanting.gui-title"));
         this.tableBlock = tableBlock;
         this.pageSize = Math.max(1,
                 Math.min(plugin.getPluginConfig().getEnchantsPerPage(), OFFER_SLOTS.size()));

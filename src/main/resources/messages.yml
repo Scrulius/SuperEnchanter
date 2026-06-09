@@ -180,8 +180,9 @@ enchanting:
   # Aviso al intentar construir contra una librería encantada sin agacharse.
   library-sneak-build: "<#FFD93D>✦ <#A8B2D1>Agáchate <#6C7293>(Shift)<#A8B2D1> para construir contra la librería."
 
-  # Cost / Power checks (action bar). {cost} y {balance} ya vienen
-  # formateados según la moneda (enchanting.cost-type): "39 XP", "$1,500", "25 Tokens".
+  # Cost / Power checks (action bar). {cost} y {balance} ya vienen formateados según
+  # la moneda: XP en PUNTOS reales ("1,250 XP"; el balance añade "(nivel N)"),
+  # Vault "$1,500", PlayerPoints "25 Tokens".
   not-enough-xp: "<#FF6B6B>✘ <#A8B2D1>¡No tienes suficiente! Necesitas <#FFB347>{cost}<#A8B2D1> (tienes <#FFB347>{balance}<#A8B2D1>)."
   not-enough-power: "<#FF6B6B>✘ <#A8B2D1>¡Necesitas más <#C084FC>Bookshelf Power<#A8B2D1>! <#FFB347>{current}<#6C7293>/<#FFB347>{required}"
 
@@ -365,7 +366,13 @@ enchant-icons:
   locked-lore:
     - "<#FF6B6B>🔒 Requiere <#C084FC>Magia nivel {required}"
     - "<#6C7293>Tu nivel de Magia: <#A8B2D1>{level}"
-  available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}"
+  # {cost} = puntos de XP reales; {levels} = sufijo "≈ N niveles" calculado con la XP
+  # ACTUAL del jugador (curva vanilla) — el feedback honesto de cuánto duele de verdad.
+  available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}{levels}"
+  # Sufijo de equivalencia en niveles del coste ({levels} = niveles que perderías).
+  lore-cost-levels: " <#6C7293>(≈ {levels} niveles para ti)"
+  # Variante cuando el coste es menos de un nivel para este jugador.
+  lore-cost-levels-sub1: " <#6C7293>(≈ menos de 1 nivel para ti)"
   available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
   # Botón de intento ({name} = encantamiento + nivel que se intenta).
   available-lore-button: "<#FFD93D>▶ <#43E97B>Clic para intentar {name}"

@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 13
+config-version: 14
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -36,9 +36,12 @@ anvil:
   default-cost-type: XP
 
   # Parámetros de la curva de coste (por operación, según niveles añadidos).
-  base-xp-cost: 1
-  cost-per-enchant-level: 3
-  max-xp-cost: 39
+  # ⚠️ La XP se cobra en PUNTOS de experiencia reales, NO en niveles (ver la nota
+  # de enchanting.base-xp-cost). El yunque es la ruta DETERMINISTA (fusionar dos
+  # ítems idénticos esquiva la tirada de la mesa) → debe doler en proporción.
+  base-xp-cost: 50
+  cost-per-enchant-level: 120
+  max-xp-cost: 3000
 
   # Chain-forging: el resultado se queda en el slot de objeto para encadenar mejoras.
   chain-forging: true
@@ -136,13 +139,24 @@ enchanting:
   # La progresión es SECUENCIAL OBLIGATORIA: solo se puede comprar el siguiente nivel
   # (I → II → III...), cada clic es UN intento con su tirada, y el coste se consume
   # aunque la tirada falle. No existe el salto directo a niveles altos.
-  base-xp-cost: 3
-  level-xp-multiplier: 3
-  cost-exponent: 1.0
-  max-xp-cost: 18
+  #
+  # ⚠️ ESTOS VALORES SON PUNTOS DE EXPERIENCIA REALES, NO NIVELES. Cobrar niveles era
+  # un agujero: 8 niveles pagados desde nivel bajo son cuatro perras en puntos (subir
+  # de 0 a 8 = 112 puntos; de 30 a 38 = +900). Ahora cada intento cuesta LO MISMO
+  # siempre, lo pagues al nivel que lo pagues, y la GUI traduce el coste a
+  # "≈ N niveles para ti" según la XP real del jugador (curva vanilla exacta).
+  # Referencias vanilla: nivel 30 completo = 1.395 puntos; nivel 50 ≈ 5.345.
+  #   comun  I≈130  V≈425   · raro  ×1.7  · epico ×2.5
+  #   legendario V≈1.700    · divino V≈2.500 (cap) — un intento de divino V vale
+  #   más o menos toda la XP de un jugador nivel 33. Eso es lo "considerablemente
+  #   más caro": el sumidero es real, no nominal.
+  base-xp-cost: 75
+  level-xp-multiplier: 55
+  cost-exponent: 1.15
+  max-xp-cost: 2500
 
-  # Encantamientos por página en la lista de la mesa (se capa al nº de slots: 7).
-  enchantments-per-page: 7
+  # Encantamientos por página en la lista de la mesa (se capa al nº de slots: 8).
+  enchantments-per-page: 8
 
   # ── Encantamiento PROBABILÍSTICO ──
   # Activado por defecto (es la experiencia base de DarkMines). Ponlo en false solo
@@ -362,12 +376,13 @@ transfer:
 
   # Coste POR encantamiento = min( max-cost, multRareza * (base-cost + level-multiplier * nivel^exp) )
   # donde 'nivel' es el nivel resultante. Con multi-selección se PAGA la suma de los elegidos.
+  # ⚠️ En PUNTOS de XP reales, no niveles (ver enchanting.base-xp-cost).
   # Más BARATO que crear en la mesa a propósito: mover/extraer es recuperar algo ya creado
   # (y destruyes el donante), no debe costar más que encantar de cero.
-  base-cost: 2
-  level-multiplier: 3
-  cost-exponent: 1.0
-  max-cost: 20
+  base-cost: 100
+  level-multiplier: 80
+  cost-exponent: 1.15
+  max-cost: 4000
 
   # Si true, multiplica el coste por enchanting.rarity-cost-multipliers según la
   # rareza del encantamiento (transferir un legendario cuesta más).

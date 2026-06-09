@@ -95,8 +95,14 @@ nos pasó con AnvilGUI). Siempre **reinicio completo** tras desplegar.
   "gratis" del loot natural).
 - `integration/` — EcoEnchantsHook, MythicMobsHook, VaultHook, PlayerPointsHook.
 - `economy/` — `CostType` (XP/VAULT/PLAYER_POINTS), `Cost` (importe + display, puro/Bukkit-free),
-  `CostService` (canAfford/deduct/balanceText + `effectiveCost`/`discountMultiplier`, multi-moneda
-  compartido por yunque, mesa y transferencia).
+  `CostService` (canAfford/deduct/refund/balanceText + `effectiveCost`/`discountMultiplier` +
+  `xpLevelsEquivalent`, multi-moneda compartido por yunque, mesa y transferencia), `XpMath`
+  (curva vanilla de XP pura/testeada: puntos↔niveles, para el hint "≈ N niveles"). ⚠️ **La XP se
+  cobra en PUNTOS reales, NO en niveles** (cobrar niveles era explotable: 8 niveles desde nivel bajo
+  ≈ gratis en puntos). Cobro/reintegro vía API NATIVA de Paper:
+  `calculateTotalExperiencePoints()` / `setExperienceLevelAndProgress(int)` (recalculan la curva
+  vanilla; MockBukkit las implementa → testeado end-to-end). Display `Cost` XP = "1,250 XP" (puntos
+  con agrupación); `balanceText` añade "(nivel N)".
 - `util/` — ItemBuilder, MiniMessageUtil, EnchantmentHelper, CooldownManager,
   PendingItemStore, ConfigUpdater, EnchantedBookshelfManager, `AuditEntry` (DTO del registro +
   `ItemSnapshot` enriquecido), `AuditLog` (rastro de operaciones **estructurado** a `audit.jsonl`,
@@ -159,11 +165,11 @@ eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunq
    riesgo de downgrade, coste y poder del siguiente nivel; clic = intentar ese peldaño
    (`EnchantingLogic.nextStep` → `NextStep{level, stepCost, requiredPower}`).
 - Botón cerrar hace de "atrás" (sube un nivel).
-- **Layout 27 slots** (fondo negro `BLACK_STAINED_GLASS_PANE`): fila 1 — stats (2), etiqueta mesa ➜
-  (3), **input (4)**, poder (6), guía (8); fila 2 — **7 slots de ofertas (10-16)**; fila 3 —
-  paginación (18/26) y cerrar/atrás (22). `AbstractCustomGUI` ganó un constructor con `size` para
-  esto (yunque/transferencia siguen en 54: dos inputs etiquetados + resultado / lista multi-select
-  no caben en 3 filas sin perder el lenguaje visual).
+- **Layout 54 slots** (fondo negro `BLACK_STAINED_GLASS_PANE`, como yunque/transferencia): cabeza de
+  stats (4) centrada arriba; icono mesa (19) + **input (20)** a la izquierda; **grid de ofertas 4×2**
+  (slots 22-25 / 31-34); poder (48), cerrar/atrás (49), guía (50), paginación (46/52). El slot de
+  sello (28/29) desapareció con los sellos. ⚠️ Se probó una versión compacta de 27 slots y se
+  REVIRTIÓ (feedback del autor: demasiado apretada/confusa) — no volver a compactarla.
 - **Barras de progreso en texto** (sin resource pack, glifo `■` ×10): % de éxito (icono de
   encantamiento, gradiente verde), nivel de Magia (cabeza de stats, `{bar} nivel/max` — el max se lee
   NATIVO de `Skill.getMaxLevel()` vía `MagiaService.maxLevel()`), poder de librerías (icono de poder).
@@ -208,12 +214,18 @@ eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunq
   "displayed" en el slot de input es seguro (el jugador nunca ve lore horneado).
 - **Blacklist unificada** (`PluginConfig.isEnchantDisabled`): acepta key completa, ruta,
   `#curses` (vanilla + tipo curse de EcoEnchants), `#type:<id>`. NO existe `disable-curses`.
-- **Coste SOLO XP, por intento**: `coste(nivel) = min(max-xp-cost, multRareza*(base +
-  mult*nivel^cost-exponent))` — cada clic cobra SOLO ese peldaño (no hay coste acumulativo:
-  `cumulativeCost` fue eliminada junto con el salto de niveles). Los **reactivos materiales fueron
-  ELIMINADOS** por diseño (lapis/amatista fuera; `Reagent` ya no existe) y `rarity-cost-type` quedó
-  **vacío** (divino ya NO se cobra en PlayerPoints; su "premium" es el gate de Magia 35 + poder 260+
-  + 25% base + 8% maldición). El mecanismo `rarity-cost-type` sigue en el código por si se revierte.
+- **Coste SOLO XP, por intento, en PUNTOS reales**: `coste(nivel) = min(max-xp-cost,
+  multRareza*(base + mult*nivel^cost-exponent))` — cada clic cobra SOLO ese peldaño (no hay coste
+  acumulativo: `cumulativeCost` fue eliminada junto con el salto de niveles). ⚠️ **Los importes son
+  PUNTOS de XP, no niveles** (mesa 75/55/exp 1.15/cap 2500; referencia: nivel 30 vanilla = 1.395
+  pts → un intento de divino V ≈ 2.500 pts ≈ toda la XP de un nivel 33). El icono traduce el coste a
+  **"≈ N niveles para ti"** con la XP real del jugador (`CostService.xpLevelsEquivalent` + `XpMath`;
+  claves `enchant-icons.lore-cost-levels(-sub1)`). Los **reactivos materiales fueron ELIMINADOS**
+  (lapis/amatista fuera; `Reagent` ya no existe) y `rarity-cost-type` quedó **vacío** (divino ya NO
+  se cobra en PlayerPoints; su "premium" es el gate de Magia 35 + poder 260+ + 25% base + 8%
+  maldición). El mecanismo `rarity-cost-type` sigue en el código por si se revierte. El yunque
+  (50/120/cap 3000) y la transferencia (100/80/exp 1.15/cap 4000) también pasaron a puntos — el
+  yunque es la ruta determinista y no podía quedarse en calderilla.
 - **Poder por rareza**: `min(maxPower, floor + nivel*step)` por rareza (`enchanting.rarity-power`).
   El poder gatea la MAGNITUD, no la fracción de nivel.
 - **Overrides por encantamiento** (`enchanting.enchantment-overrides`, por key completa o ruta):
@@ -247,8 +259,8 @@ ejecuta TODOS los seleccionados de golpe. El modo lo decide si hay destino o no:
 - **Coste** vía `EnchantFormulas.xpCostForLevel` (POR encantamiento; el botón cobra la **suma** de los
   seleccionados, `TransferGUI.totalCost`). Sección `transfer` (cost-type, base/level-mult/exponent/
   max-cost, `use-rarity-multiplier`, `require-same-material`). **Rebalanceado a propósito MÁS barato que
-  la mesa** (`base 2 / level-mult 3 / cap 20`): mover/extraer recupera algo ya creado (y destruye el
-  donante), no debe costar más que encantar de cero.
+  la mesa** (`base 100 / level-mult 80 / exp 1.15 / cap 4000`, en PUNTOS de XP): mover/extraer
+  recupera algo ya creado (y destruye el donante), no debe costar más que encantar de cero.
 - **UX tipo yunque**: clic en un encantamiento lo **togglea** (multi-select); un botón dedicado
   ejecuta todos (un misclic nunca destruye el donante). 2 slots de input, anti-dupe heredado de
   `AbstractCustomGUI`. Mensajes/botón usan `{count}` (no por-encantamiento).
@@ -510,10 +522,12 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 13`. Corre en cada reload. ⚠️ El rediseño hardcore
-  **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`) que el auto-merge
-  NO pisa, y dejó claves muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar
-  `config.yml`** en el server (borrar y dejar que se regenere) para que aplique el rebalanceo.
+  conserva comentarios. `config-version: 14`. Corre en cada reload. ⚠️ El rediseño hardcore
+  **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`, y TODAS las curvas
+  de coste al pasar a PUNTOS de XP — mesa/yunque/transfer) que el auto-merge NO pisa, y dejó claves
+  muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar `config.yml`** en el server
+  (borrar y dejar que se regenere) para que aplique el rebalanceo. ⚠️ Si los importes viejos
+  (niveles, p.ej. `max-xp-cost: 18`) se quedan con el cobro por puntos, la mesa sale casi GRATIS.
 - **`general.gui-disabled-worlds`** (lista de mundos): ahí el yunque/mesa/grindstone quedan
   **vanilla** (no se interceptan). Lo respetan `BlockInteractListener` (no abre la GUI) **y**
   `VanillaBlockListener` (no cancela el inventario vanilla ni los eventos de encantar) →

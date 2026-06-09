@@ -21,25 +21,25 @@ public record Cost(@NotNull CostType type, double amount) {
         }
     }
 
-    /** @return an XP cost of the given level amount */
+    /** @return an XP cost of the given amount of raw XP points */
     public static @NotNull Cost xp(int amount) {
         return new Cost(CostType.XP, amount);
     }
 
-    /** @return the amount rounded to a whole number (XP levels / tokens are integral) */
+    /** @return the amount rounded to a whole number (XP points / tokens are integral) */
     public int intAmount() {
         return (int) Math.round(amount);
     }
 
     /**
-     * @return the human-readable cost string, e.g. {@code "39 XP"}, {@code "$1,500"}
-     *         or {@code "25 Tokens"}
+     * @return the human-readable cost string, e.g. {@code "1,250 XP"} (raw points),
+     *         {@code "$1,500"} or {@code "25 Tokens"}
      */
     public @NotNull String displayText() {
         return switch (type) {
             case VAULT -> "$" + String.format(Locale.US, "%,.0f", amount);
             case PLAYER_POINTS -> intAmount() + " Tokens";
-            case XP -> intAmount() + " XP";
+            case XP -> String.format(Locale.US, "%,d", intAmount()) + " XP";
         };
     }
 }

@@ -46,34 +46,44 @@ class CostServiceMockTest {
         player.setLevel(30);
     }
 
-    // ── XP ───────────────────────────────────────────────────────────────────
+    // ── XP (raw POINTS, not levels — level 30 holds exactly 1395 points) ─────
 
     @Test
-    @DisplayName("XP affordability compares against the player's level")
+    @DisplayName("XP affordability compares against the player's total experience points")
     void xpCanAfford() {
-        assertTrue(cost.canAfford(player, Cost.xp(20)));
-        assertTrue(cost.canAfford(player, Cost.xp(30)));
-        assertFalse(cost.canAfford(player, Cost.xp(31)));
+        assertTrue(cost.canAfford(player, Cost.xp(1000)));
+        assertTrue(cost.canAfford(player, Cost.xp(1395)));
+        assertFalse(cost.canAfford(player, Cost.xp(1396)));
     }
 
     @Test
-    @DisplayName("XP deduct subtracts levels and reports success")
+    @DisplayName("XP deduct subtracts points and recomputes the level on the vanilla curve")
     void xpDeductSucceeds() {
-        assertTrue(cost.deduct(player, Cost.xp(20)));
-        assertEquals(10, player.getLevel());
+        // 1395 − 1043 = 352 points = exactly level 16.
+        assertTrue(cost.deduct(player, Cost.xp(1043)));
+        assertEquals(16, player.getLevel());
     }
 
     @Test
     @DisplayName("XP deduct takes nothing when the player can't pay")
     void xpDeductInsufficient() {
-        assertFalse(cost.deduct(player, Cost.xp(40)));
+        assertFalse(cost.deduct(player, Cost.xp(1500)));
         assertEquals(30, player.getLevel(), "level must be untouched on a failed charge");
     }
 
     @Test
-    @DisplayName("XP balance text reflects the current level")
+    @DisplayName("XP balance text shows points plus the level for context")
     void xpBalanceText() {
-        assertEquals("30 XP", cost.balanceText(player, CostType.XP));
+        assertEquals("1,395 XP (nivel 30)", cost.balanceText(player, CostType.XP));
+    }
+
+    @Test
+    @DisplayName("xpLevelsEquivalent reports the real level hit of a point cost")
+    void xpLevelsEquivalent() {
+        assertEquals(0, cost.xpLevelsEquivalent(player, Cost.xp(50)));
+        assertEquals(14, cost.xpLevelsEquivalent(player, Cost.xp(1043)));
+        assertEquals(0, cost.xpLevelsEquivalent(player, new Cost(CostType.VAULT, 1000)),
+                "non-XP costs have no level equivalence");
     }
 
     // ── Absent economies ──────────────────────────────────────────────────────
