@@ -1,0 +1,251 @@
+# =====================================================================
+#  SuperEnchanter — GUIA DEL SISTEMA DE ENCANTAMIENTOS (paso a paso)
+# =====================================================================
+#  Menu informativo (solo lectura) en DeluxeMenus. Explica todo el flujo
+#  de SuperEnchanter como una guia por pasos. No ejecuta nada del plugin:
+#  es texto para que el jugador entienda como funciona.
+#
+#  Abrir:  /guiaencantar   (alias: guiaencantamientos, encantarguia)
+#  Editar texto: cambia las lore de abajo. Tras editar: /dm reload
+# =====================================================================
+
+open_command:
+  - guiaencantar
+  - guiaencantamientos
+  - encantarguia
+
+size: 54
+menu_title: '<gradient:#4C1D95:#9D5BE0><bold>Guia de Encantamientos</bold></gradient>'
+modern_use_minimessage_for_title: true
+
+items:
+
+  # ── Fondo negro (mismo lenguaje visual que las GUIs del plugin) ──
+  'fondo':
+    material: BLACK_STAINED_GLASS_PANE
+    priority: 10
+    slots: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]
+    modern_use_minimessage: true
+    display_name: ' '
+
+  # ── Cabecera ──
+  'intro':
+    material: KNOWLEDGE_BOOK
+    priority: 1
+    slot: 4
+    modern_use_minimessage: true
+    display_name: '<gradient:#4C1D95:#9D5BE0><bold>Como encantar en el servidor</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Aqui el yunque y la mesa vanilla no existen:'
+      - '<#A8B2D1>todo se hace en las GUIs custom del servidor.'
+      - ''
+      - '<#A8B2D1>Sigue los <white>9 pasos</white> de abajo en orden.'
+      - '<#A8B2D1>Pasa el raton por cada uno para leer el detalle.'
+      - ''
+      - '<#6C7293>✦ No hay encantamientos gratis en cofres ni'
+      - '<#6C7293>  aldeanos: la unica fuente es la mesa custom.'
+
+  # ── PASO 1 — La mesa y el objeto ──
+  'paso1':
+    material: ENCHANTING_TABLE
+    priority: 1
+    slot: 11
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 1 — Abre la mesa</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Clic derecho en una <white>mesa de encantamientos</white>'
+      - '<#A8B2D1>para abrir la GUI. Pon el objeto en el slot'
+      - '<#A8B2D1>de la izquierda.'
+      - ''
+      - '<#A8B2D1>Los encantamientos se agrupan por <white>categoria</white>'
+      - '<#A8B2D1>y cada uno tiene una <white>rareza</white>. El color te'
+      - '<#A8B2D1>dice la rareza, de menor a mayor:'
+      - ''
+      - '<#B0B6BE>✦ Comun  <#60A5FA>✦ Raro  <#C084FC>✦ Epico'
+      - '<#FFC83D>✦ Legendario  <#9BE8FF>✦ Divino'
+      - ''
+      - '<#6C7293>✦ Los bloqueados salen en gris con el motivo'
+      - '<#6C7293>  (conflicto, requisito o limite de tipo).'
+
+  # ── PASO 2 — Probabilidad y peldaños ──
+  'paso2':
+    material: EXPERIENCE_BOTTLE
+    priority: 1
+    slot: 13
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 2 — Suerte y peldanos</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Encantar <white>no siempre tiene exito</white>. Cada'
+      - '<#A8B2D1>rareza tiene su probabilidad; cuanto mas alta'
+      - '<#A8B2D1>la rareza, mas riesgo.'
+      - ''
+      - '<#A8B2D1>Subir de nivel va <white>peldano a peldano</white>:'
+      - '<#A8B2D1>cada intento cobra su coste y, si fallas,'
+      - '<#A8B2D1>el ascenso se detiene pero <white>conservas</white> los'
+      - '<#A8B2D1>niveles ya logrados (puntos de control).'
+      - ''
+      - '<#6C7293>✦ Un fallo consume el coste y el reactivo de'
+      - '<#6C7293>  ese peldano: ese es el riesgo. Reintentar'
+      - '<#6C7293>  solo paga lo que falta.'
+
+  # ── PASO 3 — Sellos de garantía ──
+  'paso3':
+    material: NETHER_STAR
+    priority: 1
+    slot: 15
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 3 — Sellos de garantia</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Un <white>Sello</white> mete probabilidad extra. Va en el'
+      - '<#A8B2D1>slot de sello de la mesa.'
+      - ''
+      - '<#A8B2D1>Cada sello sirve a <white>SU rareza</white>: el Sello'
+      - '<#A8B2D1>Raro garantiza un encantamiento raro al 100%,'
+      - '<#A8B2D1>pero no hace nada con otras rarezas (y no se'
+      - '<#A8B2D1>gasta). El de su rareza al 100% = garantia.'
+      - ''
+      - '<#FFC83D>▶ Consiguelos en la tienda / recompensas del'
+      - '<#FFC83D>  servidor. Cada rareza tiene su sello.'
+
+  # ── PASO 4 — Coste y monedas ──
+  'paso4':
+    material: GOLD_INGOT
+    priority: 1
+    slot: 20
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 4 — Coste y monedas</bold></gradient>'
+    lore:
+      - '<#A8B2D1>El precio sube con el nivel y la rareza, y es'
+      - '<#A8B2D1><white>acumulativo</white>: saltar a V cuesta lo mismo que'
+      - '<#A8B2D1>forjar I, II, III, IV y V por separado.'
+      - ''
+      - '<#A8B2D1>Se paga en <white>experiencia</white> normalmente. Los'
+      - '<#A8B2D1>encantamientos <#9BE8FF>Divinos</#9BE8FF> se pagan en'
+      - '<#A8B2D1><white>PlayerPoints</white> (moneda premium).'
+      - ''
+      - '<#6C7293>✦ Algunos niveles piden un <white>reactivo</white>'
+      - '<#6C7293>  (lapislazuli, amatista...) ademas del coste.'
+      - '<#6C7293>✦ El icono ya muestra el precio final que se'
+      - '<#6C7293>  te cobrara (con tus descuentos aplicados).'
+
+  # ── PASO 5 — Poder y librerías ──
+  'paso5':
+    material: CHISELED_BOOKSHELF
+    priority: 1
+    slot: 22
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 5 — Poder y librerias</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Los niveles altos exigen <white>poder</white>. El poder'
+      - '<#A8B2D1>sale de las <white>estanterias</white> alrededor de la mesa,'
+      - '<#A8B2D1>igual que en vanilla.'
+      - ''
+      - '<#A8B2D1>Hay un objeto especial, la <white>Libreria Encantada</white>,'
+      - '<#A8B2D1>que da <white>mucho mas poder</white> que una estanteria'
+      - '<#A8B2D1>normal. Colocala cerca de la mesa.'
+      - ''
+      - '<#6C7293>✦ Debe haber <white>linea de vision</white> entre la mesa y'
+      - '<#6C7293>  la estanteria (aire en medio), como en vanilla.'
+      - ''
+      - '<#FFC83D>▶ La Libreria Encantada se consigue en el'
+      - '<#FFC83D>  servidor; es una estanteria real, sin texturas.'
+
+  # ── PASO 6 — El yunque ──
+  'paso6':
+    material: ANVIL
+    priority: 1
+    slot: 24
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 6 — El Yunque</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Clic derecho en un <white>yunque</white> para fusionar.'
+      - ''
+      - '<#A8B2D1>Pon el <#5EF1FF>objeto</#5EF1FF> a la izquierda y a la derecha'
+      - '<#A8B2D1>un <white>libro encantado</white> o un objeto identico.'
+      - '<#A8B2D1>El centro te muestra el resultado; pulsa'
+      - '<#A8B2D1><white>Forjar</white> para confirmar.'
+      - ''
+      - '<#A8B2D1>El yunque respeta las mismas reglas que la'
+      - '<#A8B2D1>mesa: no cuela encantamientos en conflicto'
+      - '<#A8B2D1>ni prohibidos.'
+      - ''
+      - '<#6C7293>✦ No repara ni renombra: es solo para fusionar.'
+
+  # ── PASO 7 — Transferir / Extraer ──
+  'paso7':
+    material: GRINDSTONE
+    priority: 1
+    slot: 29
+    modern_use_minimessage: true
+    display_name: '<gradient:#5EE7A8:#3BA776><bold>Paso 7 — Transferir y Extraer</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Clic derecho en una <white>piedra de afilar</white>.'
+      - ''
+      - '<#A8B2D1>Pon a un lado el objeto del que sacar los'
+      - '<#A8B2D1>encantamientos y al otro el destino. <white>Marca</white>'
+      - '<#A8B2D1>los que quieras y confirma:'
+      - ''
+      - '<#A8B2D1>✦ Destino = <white>objeto</white> -> mueve los elegidos a el.'
+      - '<#A8B2D1>✦ Destino = <white>libro</white> -> los extrae a un libro'
+      - '<#A8B2D1>  encantado que podras usar luego.'
+      - ''
+      - '<#6C7293>✦ El objeto de origen <white>se destruye entero</white>:'
+      - '<#6C7293>  te llevas lo que elijas, el resto se pierde.'
+      - '<#6C7293>✦ Es mas barato que encantar de cero.'
+
+  # ── PASO 8 — Maldiciones ──
+  'paso8':
+    material: WITHER_SKELETON_SKULL
+    priority: 1
+    slot: 31
+    modern_use_minimessage: true
+    display_name: '<gradient:#C0392B:#E74C3C><bold>Paso 8 — Maldiciones</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Al encantar con exito hay una <white>pequena</white>'
+      - '<#A8B2D1>probabilidad de que el objeto reciba una'
+      - '<#A8B2D1><#E74C3C>maldicion</#E74C3C> aleatoria. Es un riesgo inevitable:'
+      - '<#A8B2D1>ningun sello la previene.'
+      - ''
+      - '<#A8B2D1>Para quitarla, lleva el objeto al <white>yunque</white>'
+      - '<#A8B2D1>con un <#FFD45E>Sello Purificador</#FFD45E> en el slot de'
+      - '<#A8B2D1>sacrificio y forja: elimina <white>todas</white> las'
+      - '<#A8B2D1>maldiciones y consume el sello.'
+      - ''
+      - '<#6C7293>✦ Purificar es gratis (el coste es el sello).'
+
+  # ── PASO 9 — La habilidad Magia ──
+  'paso9':
+    material: AMETHYST_CLUSTER
+    priority: 1
+    slot: 33
+    modern_use_minimessage: true
+    display_name: '<gradient:#B14EFF:#5EF1FF><bold>Paso 9 — La habilidad Magia</bold></gradient>'
+    lore:
+      - '<#A8B2D1>Cada vez que encantas ganas <white>XP de Magia</white>.'
+      - '<#A8B2D1>Al subir de nivel, encantar mejora:'
+      - ''
+      - '<#A8B2D1>✦ <white>Mas probabilidad</white> de exito.'
+      - '<#A8B2D1>✦ <white>Menos coste</white>.'
+      - '<#A8B2D1>✦ Posibilidad de <white>recuperar el coste</white> al fallar.'
+      - '<#A8B2D1>✦ Mas <white>mana</white> maximo para tus hechizos.'
+      - ''
+      - '<#A8B2D1>Las rarezas altas (Legendario, Divino) piden'
+      - '<#A8B2D1>cierto <white>nivel de Magia</white> para poder usarlas.'
+      - ''
+      - '<#A8B2D1>El <white>equipo de mago</white> (tunica, sombrero) acelera'
+      - '<#A8B2D1>la XP de Magia. Mira tu progreso en /skills.'
+      - ''
+      - '<#6C7293>✦ Tus bonos actuales salen en la cabeza de'
+      - '<#6C7293>  estadisticas, arriba en la propia mesa.'
+
+  # ── Cerrar ──
+  'cerrar':
+    material: BARRIER
+    priority: 1
+    slot: 49
+    modern_use_minimessage: true
+    display_name: '<#FF6B6B><bold>✖ Cerrar</bold>'
+    lore:
+      - '<#A8B2D1>Cierra esta guia.'
+    left_click_commands:
+      - '[close]'
