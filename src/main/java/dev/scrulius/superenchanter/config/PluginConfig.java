@@ -119,6 +119,16 @@ public final class PluginConfig {
     private boolean lootIncludeMobDrops;
     private java.util.Set<String> lootDisabledWorlds = java.util.Collections.emptySet();
 
+    // ── Banned enchantments (cached) — purged from the whole world (default: mending) ──
+    private boolean bannedEnchantmentsEnabled;
+    private boolean bannedPurgeInventories;
+    private boolean bannedBlockXpRepair;
+    private java.util.Set<String> bannedEnchantmentKeys = java.util.Collections.emptySet();
+
+    // ── Villager trades (cached) ──
+    private boolean villagerTradesEnabled;
+    private boolean villagerBlockBookTrades;
+
     // ── Sounds (cached) ──
     private SoundEffect anvilSuccessSound;
     private SoundEffect enchantSuccessSound;
@@ -242,6 +252,8 @@ public final class PluginConfig {
         loadTransferSettings();
         loadAntiDupeSettings();
         loadLootControlSettings();
+        loadBannedEnchantmentSettings();
+        loadVillagerTradeSettings();
         loadSounds();
         loadParticles();
     }
@@ -959,6 +971,57 @@ public final class PluginConfig {
     public boolean isLootWorldDisabled(@NotNull String worldName) {
         return lootDisabledWorlds.contains(worldName.toLowerCase(Locale.ROOT));
     }
+
+    private void loadBannedEnchantmentSettings() {
+        bannedEnchantmentsEnabled = config.getBoolean("banned-enchantments.enabled", true);
+        bannedPurgeInventories = config.getBoolean("banned-enchantments.purge-player-inventories", true);
+        bannedBlockXpRepair = config.getBoolean("banned-enchantments.block-xp-repair", true);
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (String raw : config.getStringList("banned-enchantments.keys")) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            keys.add(normalizeEnchantKey(raw));
+        }
+        bannedEnchantmentKeys = keys;
+    }
+
+    /** Normalizes an enchantment key to {@code namespace:key} (defaulting to {@code minecraft:}), lowercased. */
+    private static @NotNull String normalizeEnchantKey(@NotNull String raw) {
+        String key = raw.trim().toLowerCase(Locale.ROOT);
+        return key.contains(":") ? key : "minecraft:" + key;
+    }
+
+    /** @return whether globally-banned enchantments (default: mending) are purged from the world */
+    public boolean isBannedEnchantmentsEnabled() { return bannedEnchantmentsEnabled; }
+
+    /** @return whether player inventories are purged of banned enchantments (join/open/click) */
+    public boolean isBannedPurgeInventories() { return bannedPurgeInventories; }
+
+    /** @return whether XP-repair (mending's effect) is blocked outright via PlayerItemMendEvent */
+    public boolean isBannedBlockXpRepair() { return bannedBlockXpRepair; }
+
+    /**
+     * Whether the given enchantment is globally banned (must be stripped from any item).
+     *
+     * @param enchant the enchantment
+     * @return {@code true} if its key is in the banned list
+     */
+    public boolean isEnchantmentBanned(@NotNull org.bukkit.enchantments.Enchantment enchant) {
+        return !bannedEnchantmentKeys.isEmpty()
+                && bannedEnchantmentKeys.contains(enchant.getKey().toString().toLowerCase(Locale.ROOT));
+    }
+
+    private void loadVillagerTradeSettings() {
+        villagerTradesEnabled = config.getBoolean("villager-trades.enabled", true);
+        villagerBlockBookTrades = config.getBoolean("villager-trades.block-book-trades", true);
+    }
+
+    /** @return whether villager-trade control is active */
+    public boolean isVillagerTradesEnabled() { return villagerTradesEnabled; }
+
+    /** @return whether villagers are blocked from acquiring any trade whose result is a book */
+    public boolean isVillagerBlockBookTrades() { return villagerBlockBookTrades; }
 
     /** @return whether a critical startup failure shuts the whole server down */
     public boolean isShutdownOnCriticalError() { return shutdownOnCriticalError; }

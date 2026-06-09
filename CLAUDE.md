@@ -273,6 +273,29 @@ mobs — la obtención pasa SIEMPRE por la mesa custom. Dos acciones independien
 Cubre `LootGenerateEvent` (cofres/estructuras/pesca) y, con `include-mob-drops: true`,
 `EntityDeathEvent` (equipo encantado que sueltan los mobs). `disabled-worlds: []` excluye mundos.
 
+### Encantamientos prohibidos globalmente (purga — sucesor de AntiMending) — `banned-enchantments`
+Absorbe el viejo plugin standalone **AntiMending** (`Scrulius/AntiMending`) generalizado a una lista
+de keys configurable, default `[mending]` (default ON). `BannedEnchantmentListener` purga los
+encantamientos vetados de CUALQUIER ítem para que no existan en el server (mending rompería la
+economía de encantar con reparación por XP). La mesa ya no lo ofrece (blacklist) y el yunque vanilla
+está bloqueado; esto cierra los vectores restantes (ítems previos, libros, creativo, pesca, pickups):
+- `keys` (default `[mending]`) → `PluginConfig.isEnchantmentBanned(ench)` compara por key normalizada
+  (`minecraft:` implícito; admite keys completas y de EcoEnchants). `strip()` quita held + stored
+  (`EnchantmentStorageMeta`).
+- `purge-player-inventories` (ON) → strip en join / `InventoryOpenEvent` / click. ⚠️ El strip del
+  **click se difiere 1 tick** (`runTask`) — mutar ítems mid-click rompe el tracking de Bukkit y dupea
+  (sobre todo en creativo); mismo patrón para `InventoryCreativeEvent`.
+- `block-xp-repair` (ON) → cancela `PlayerItemMendEvent` (la XP nunca repara, aunque algo se colara).
+- pickups (`EntityPickupItemEvent`) y pesca (`PlayerFishEvent`) siempre saneados con la feature ON.
+- El loot NO se duplica aquí: lo cubre `LootControlListener` (que quita TODOS los encantamientos del
+  loot natural).
+
+### Tradeos de aldeano — `villager-trades`
+`VillagerTradeListener` (default ON) cancela `VillagerAcquireTradeEvent` cuando el resultado es un
+**libro de cualquier tipo** (`block-book-trades`, ON: BOOK/ENCHANTED_BOOK/WRITABLE/WRITTEN/KNOWLEDGE)
+→ los bibliotecarios no venden encantamientos "gratis" saltándose la mesa custom. Cancelar al
+adquirir impide que la receta llegue siquiera a existir en el aldeano.
+
 ### Descuentos de coste por permiso
 `CostService.effectiveCost(player, cost)` aplica un descuento por permiso al coste que se
 **muestra Y se cobra** (lo llaman las 3 GUIs justo al obtener el `Cost`). `superenchanter.cost.bypass`
@@ -409,7 +432,7 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 8`. Corre en cada reload.
+  conserva comentarios. `config-version: 9`. Corre en cada reload.
 - **`enchanting.rarity-cost-type`** (mapa rareza→moneda): override del `cost-type` global por rareza
   (las que no aparezcan heredan el global). Se usa para que **Divino se cobre en PLAYER_POINTS**
   (premium) mientras el resto sigue en XP. Lo resuelve `PluginConfig.getEnchantingCostType(rarityId)`

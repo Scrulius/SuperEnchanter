@@ -134,6 +134,8 @@ public class SuperEnchanterPlugin extends JavaPlugin {
         pm.registerEvents(new VanillaBlockListener(this), this);
         pm.registerEvents(new BookshelfTrackingListener(this), this);
         pm.registerEvents(new dev.scrulius.superenchanter.listener.LootControlListener(this), this);
+        pm.registerEvents(new dev.scrulius.superenchanter.listener.BannedEnchantmentListener(this), this);
+        pm.registerEvents(new dev.scrulius.superenchanter.listener.VillagerTradeListener(this), this);
 
         // ── Commands ──
         registerCommands();

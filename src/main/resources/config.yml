@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 8
+config-version: 9
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -449,6 +449,37 @@ loot-control:
   include-mob-drops: true
   # Mundos donde NO aplicar el control (lista de nombres). Vacío = aplicar en todos.
   disabled-worlds: []
+
+# ─────────────────────────────────────────────
+# BANNED ENCHANTMENTS (purga global — sucesor del plugin AntiMending)
+# ─────────────────────────────────────────────
+# Encantamientos PROHIBIDOS en todo el servidor: se eliminan de CUALQUIER ítem
+# (inventarios, ítems recogidos, pesca) y se bloquea su efecto. Por diseño el
+# server RPG desactiva 'mending' (la reparación por XP rompería la economía de
+# encantar). La mesa custom nunca lo ofrece (blacklist) y el yunque vanilla está
+# bloqueado; esto cierra los huecos restantes (ítems previos, libros, creativo).
+banned-enchantments:
+  enabled: true
+  # Keys a purgar. 'mending' = minecraft:mending; admite keys completas (namespace:key),
+  # también de EcoEnchants. Quita el encantamiento del ítem dejándolo limpio.
+  keys:
+    - mending
+  # Purga el inventario del jugador al entrar / abrir un inventario / clickear
+  # (el strip del click se difiere 1 tick para no romper el tracking de Bukkit ni dupear).
+  purge-player-inventories: true
+  # Bloquea PlayerItemMendEvent: la XP NUNCA repara durabilidad (el efecto de mending),
+  # aunque algún ítem se colara con el encantamiento.
+  block-xp-repair: true
+
+# ─────────────────────────────────────────────
+# VILLAGER TRADES
+# ─────────────────────────────────────────────
+villager-trades:
+  enabled: true
+  # Los aldeanos no adquieren NINGÚN trade cuyo resultado sea un libro (libro, libro
+  # encantado, libro escribible/escrito, libro de conocimiento). Evita comprar
+  # encantamientos "gratis" a los bibliotecarios saltándose la mesa custom.
+  block-book-trades: true
 
 # ─────────────────────────────────────────────
 # SOUNDS
