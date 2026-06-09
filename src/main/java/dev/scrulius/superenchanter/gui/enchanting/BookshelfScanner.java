@@ -9,7 +9,9 @@ import org.bukkit.block.Block;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -90,7 +92,7 @@ public final class BookshelfScanner {
                     }
 
                     // Enforce air gap if configured
-                    if (airGapRequired && !hasAirGap(tableBlock, candidate, dx, dy, dz)) {
+                    if (airGapRequired && !hasAirGap(tableBlock, dx, dy, dz)) {
                         continue;
                     }
 
@@ -141,34 +143,67 @@ public final class BookshelfScanner {
     }
 
     /**
-     * Checks whether there is at least one air block on the direct line between
-     * the table and the candidate block. Uses a simplified approach: checks the
-     * adjacent block one step closer toward the table.
+     * Real line-of-sight air gap: the straight line from the table to the candidate
+     * must pass only through air. Every block cell the line crosses (excluding both
+     * endpoints) is checked, so a power-providing block hidden behind a wall no longer
+     * counts — unlike the old heuristic, which only inspected the single cell adjacent
+     * to the candidate and let deeper blocks slip through.
      *
-     * @param tableBlock the enchanting table block
-     * @param candidate  the block being evaluated
+     * @param tableBlock the enchanting table block (origin of the line)
      * @param dx         relative X offset from table to candidate
      * @param dy         relative Y offset from table to candidate
      * @param dz         relative Z offset from table to candidate
-     * @return {@code true} if an air gap exists, or the block is directly adjacent to the table
+     * @return {@code true} if every intervening cell is air (or the candidate is adjacent)
      */
-    private static boolean hasAirGap(@NotNull Block tableBlock, @NotNull Block candidate,
-                                     int dx, int dy, int dz) {
-        // If the candidate is directly adjacent (Manhattan distance 1), no gap needed
-        if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) <= 1) {
-            return true;
+    private static boolean hasAirGap(@NotNull Block tableBlock, int dx, int dy, int dz) {
+        for (int[] cell : lineCells(dx, dy, dz)) {
+            final Material type = tableBlock.getRelative(cell[0], cell[1], cell[2]).getType();
+            if (type != Material.AIR && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
+                return false; // a solid block breaks the line of sight
+            }
         }
+        return true;
+    }
 
-        // Compute one step back toward the table (sign-based)
-        final int stepX = Integer.signum(-dx);
-        final int stepY = Integer.signum(-dy);
-        final int stepZ = Integer.signum(-dz);
-
-        final Block adjacent = candidate.getRelative(stepX, stepY, stepZ);
-        final Material adjacentType = adjacent.getType();
-
-        return adjacentType == Material.AIR
-                || adjacentType == Material.CAVE_AIR
-                || adjacentType == Material.VOID_AIR;
+    /**
+     * Returns the integer block offsets (relative to the table at the origin) that the
+     * straight line to a candidate at {@code (dx, dy, dz)} passes through, excluding both
+     * endpoints. Pure geometry with no Bukkit dependency so it can be unit-tested in
+     * isolation; the scanner walks these cells to require a clear line of sight.
+     *
+     * <p>The line between block <em>centres</em> is sampled finely and each sample is
+     * rounded to its containing block; adjacent candidates (max axis span ≤ 1) have no
+     * cells in between and yield an empty list.</p>
+     */
+    static @NotNull List<int[]> lineCells(int dx, int dy, int dz) {
+        final int steps = Math.max(Math.abs(dx), Math.max(Math.abs(dy), Math.abs(dz)));
+        final List<int[]> cells = new ArrayList<>();
+        if (steps <= 1) {
+            return cells; // adjacent (or the table itself): nothing strictly in between
+        }
+        final int samples = steps * 4; // fine enough to land on every crossed cell
+        for (int i = 1; i < samples; i++) {
+            final double t = (double) i / samples;
+            final int bx = (int) Math.round(dx * t);
+            final int by = (int) Math.round(dy * t);
+            final int bz = (int) Math.round(dz * t);
+            if (bx == 0 && by == 0 && bz == 0) {
+                continue; // still inside the table's own cell
+            }
+            if (bx == dx && by == dy && bz == dz) {
+                continue; // reached the candidate
+            }
+            boolean seen = false;
+            for (int[] c : cells) {
+                if (c[0] == bx && c[1] == by && c[2] == bz) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                cells.add(new int[]{bx, by, bz});
+            }
+        }
+        return cells;
     }
 }

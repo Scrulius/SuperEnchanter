@@ -375,7 +375,11 @@ TODO igual** (coste + reactivo) — ese es el riesgo/sumidero.
   (o `any`/`all`/omitido, o forma corta `id: 25`) = sello **universal** (cualquier rareza). Config en
   `success-chance.boosters: { id → {rarity,percent} }`. `getBoosterPercent(mmId, enchantRarity)`
   resuelve el aporte según la rareza del encantamiento seleccionado. Se consumen en CADA intento por
-  defecto (`boosters-consumed-on-success-only` lo cambia a solo-éxito).
+  defecto (`boosters-consumed-on-success-only` lo cambia a solo-éxito). **Feedback de no-aplicable**:
+  si hay un sello en la ranura atado a OTRA rareza (aporta 0, no se gasta), el icono de nivel muestra
+  `enchant-icons.lore-seal-mismatch` ("Este sello solo afecta a {rareza}") en vez de no decir nada —
+  el jugador entiende por qué no sube el %. Lo calcula `EnchantingGUI.sealMismatchRarityId` (usa
+  `PluginConfig.getBooster` para leer la rareza objetivo del sello) y lo pinta `appendChanceLore`.
 - **Tirada POR PASO** (`EnchantingGUI.handleLevelClick`, rediseñado): clicar un nivel destino **sube
   peldaño a peldaño** desde el nivel actual; cada peldaño cobra **solo su `stepCost`** + reactivo
   (consumidos aun fallando) y tira `ThreadLocalRandom`. Un fallo **detiene el ascenso CONSERVANDO los
@@ -543,10 +547,13 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
   de poder + override de librería vía PDC de chunk) y `CostService` (XP real; Vault/PP ausentes → no
   pagable). La **precedencia de `BlockReason`** está extraída a `EnchantingLogic.classifyBlock`
   (puro, sin Bukkit/eco) y cubierta por `EnchantingLogicTest` (9 casos: maxed/upgrade/precedencia
-  required>conflict>type-limit). PENDIENTE: el resto de `analyze()` (scan + resolución de
-  targets/conflicts vía eco) y `TransferLogic.computeOffers` — NO testeables con MockBukkit porque
-  llaman a EcoEnchants (`com.willfp.*` es compileOnly → `NoClassDefFoundError` en runtime de test;
-  haría falta eco real).
+  required>conflict>type-limit). La geometría de **line-of-sight del escáner** (`BookshelfScanner.
+  lineCells`, pura) la cubre `BookshelfScannerLineCellsTest`, y la **lógica de sello por rareza**
+  (`PluginConfig.Booster.percentFor`) la cubre `BoosterTest` (ambos sin Bukkit). PENDIENTE: el resto
+  de `analyze()` (scan + resolución de targets/conflicts vía eco) y `TransferLogic.computeOffers` — NO
+  testeables con MockBukkit porque llaman a EcoEnchants (`com.willfp.*` es compileOnly →
+  `NoClassDefFoundError` en runtime de test; haría falta un harness con eco real (servidor real, no
+  MockBukkit) — sigue siendo el hueco grande de cobertura, no resuelto.
 - ~~Comando debug `/se bookshelf`~~ HECHO (+ `/se give`, `/se book`, `/se audit`) en
   `command/SuperEnchanterCommand`.
 - ~~Encantamiento probabilístico + sellos de garantía por rareza (MythicMobs)~~ HECHO
@@ -555,5 +562,10 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 - ~~Obtención/economía de maldiciones~~ HECHO: tirada de maldición al encantar (sin prevención) +
   Sello Purificador (yunque) como única cura — ver `curse-chance`/`curse-removal`.
 - ~~No hay encantamientos "gratis" en loot natural~~ HECHO: `LootControlListener` (`loot-control`).
-- Air-gap del escáner es heurístico (no line-of-sight real).
+- ~~Air-gap del escáner es heurístico~~ HECHO: **line-of-sight real** (`BookshelfScanner.lineCells`,
+  pura/testeada). La línea recta mesa→bloque se muestrea y TODA celda intermedia debe ser aire; un
+  bloque que da poder escondido tras una pared ya NO cuenta (antes solo se miraba la celda pegada al
+  bloque → se colaban los de detrás). ⚠️ Es más estricto: setups con librerías muy empaquetadas (sin
+  aire entre anillos profundos) pueden perder algo de poder vanilla — las librerías encantadas siguen
+  siendo la fuente real de poder, así que el impacto es menor; rebalancea radios/poder si hace falta.
 - Pre-índice de encantamientos por categoría al arrancar (si hay lag con muchísimos EcoEnchants).

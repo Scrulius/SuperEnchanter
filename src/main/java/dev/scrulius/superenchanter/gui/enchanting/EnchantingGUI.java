@@ -512,6 +512,30 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     }
 
     /**
+     * When a seal sits in the slot but doesn't contribute for {@code enchantRarity}
+     * (it's bound to a different, specific rarity), returns that seal's target rarity
+     * id so the icon can explain the mismatch. Returns {@code null} when there's no
+     * seal, it isn't a configured seal, or it's a universal seal (which always applies,
+     * so a 0% there means the feature is off rather than a rarity mismatch).
+     */
+    @org.jetbrains.annotations.Nullable
+    private String sealMismatchRarityId(@org.jetbrains.annotations.Nullable String enchantRarity) {
+        if (!boosterEnabled) {
+            return null;
+        }
+        final ItemStack booster = inventory.getItem(SLOT_BOOSTER);
+        if (booster == null || booster.getType() == Material.AIR) {
+            return null;
+        }
+        final String mythicId = plugin.getMythicMobsHook().getItemId(booster);
+        final PluginConfig.Booster b = plugin.getPluginConfig().getBooster(mythicId);
+        if (b == null || b.rarity() == null) {
+            return null; // not a seal, or universal seal (no specific rarity to name)
+        }
+        return b.percentFor(enchantRarity) > 0 ? null : b.rarity();
+    }
+
+    /**
      * Rolls for a curse on a successful enchant. Returns the curse to apply, or {@code null}
      * if the feature is off, the roll missed, or no curse targets the item. By design there
      * is NO prevention — the curse is an unavoidable gamble; the cure is the Sello Purificador
@@ -576,9 +600,10 @@ public final class EnchantingGUI extends AbstractCustomGUI {
             if (offerIndex < end) {
                 if (selectedEnchantment != null) {
                     final LevelEnchantmentOffer lvlOffer = levelOffers.get(offerIndex);
+                    final int bp = currentBoosterPercent(lvlOffer.rarityId());
                     inventory.setItem(guiSlot,
-                            EnchantingLogic.createLevelOfferIcon(lvlOffer, player,
-                                    currentBoosterPercent(lvlOffer.rarityId()), plugin));
+                            EnchantingLogic.createLevelOfferIcon(lvlOffer, player, bp,
+                                    bp > 0 ? null : sealMismatchRarityId(lvlOffer.rarityId()), plugin));
                 } else if (selectedCategory != null) {
                     inventory.setItem(guiSlot,
                             EnchantingLogic.createEnchantIcon(enchantOffers.get(offerIndex), player, plugin));

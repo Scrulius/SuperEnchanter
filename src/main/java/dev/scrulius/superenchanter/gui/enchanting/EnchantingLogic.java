@@ -543,6 +543,7 @@ public final class EnchantingLogic {
     public static ItemStack createLevelOfferIcon(@NotNull LevelEnchantmentOffer offer,
                                                  @NotNull Player player,
                                                  int boosterPercent,
+                                                 @Nullable String sealRarityId,
                                                  @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
         MessagesConfig msg = plugin.getMessages();
         // Single-level enchantments show no roman numeral ("Vitalidad", not "Vitalidad I").
@@ -590,7 +591,7 @@ public final class EnchantingLogic {
                 lore.add(msg.format("enchant-icons.lore-rarity", Map.of("{rarity}", rarity)));
                 lore.add("");
             }
-            appendChanceLore(lore, offer, boosterPercent, player, plugin);
+            appendChanceLore(lore, offer, boosterPercent, sealRarityId, player, plugin);
             lore.add(msg.format("enchant-icons.available-lore-cost",
                     Map.of("{cost}", cost.displayText())));
             lore.add(msg.format("enchant-icons.available-lore-power",
@@ -637,7 +638,7 @@ public final class EnchantingLogic {
             lore.add(msg.format(key, reagentPlaceholders(offer.reagent())));
         }
 
-        appendChanceLore(lore, offer, boosterPercent, player, plugin);
+        appendChanceLore(lore, offer, boosterPercent, sealRarityId, player, plugin);
         lore.add("");
         lore.add(msg.raw("enchant-icons.unavailable-footer"));
 
@@ -661,6 +662,7 @@ public final class EnchantingLogic {
     private static void appendChanceLore(@NotNull List<String> lore,
                                          @NotNull LevelEnchantmentOffer offer,
                                          int boosterPercent,
+                                         @Nullable String sealRarityId,
                                          @NotNull Player player,
                                          @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
         final PluginConfig config = plugin.getPluginConfig();
@@ -681,6 +683,13 @@ public final class EnchantingLogic {
         } else {
             lore.add(msg.format("enchant-icons.lore-chance",
                     Map.of("{chance}", String.valueOf(effective))));
+            // A seal sitting in the slot that targets a *different* rarity contributes 0
+            // and isn't consumed. Without this line the player just sees no boost and
+            // assumes the seal is broken — tell them which rarity it actually serves.
+            if (sealRarityId != null) {
+                lore.add(msg.format("enchant-icons.lore-seal-mismatch",
+                        Map.of("{rarity}", rarityDisplayName(plugin, sealRarityId))));
+            }
         }
     }
 

@@ -405,6 +405,22 @@ public final class PluginConfig {
         return booster == null ? 0 : booster.percentFor(enchantRarity);
     }
 
+    /**
+     * Returns the configured {@link Booster} for a potentiator item, or {@code null}
+     * if the id isn't a configured seal. Unlike {@link #getBoosterPercent}, this
+     * exposes the seal's target rarity so the menu can tell the player <em>why</em>
+     * a seal isn't contributing (wrong rarity) instead of silently showing nothing.
+     *
+     * @param mythicId the MythicMobs id of the seal (case-insensitive), may be {@code null}
+     * @return the booster definition, or {@code null} if not a configured seal
+     */
+    public @Nullable Booster getBooster(@Nullable String mythicId) {
+        if (mythicId == null) {
+            return null;
+        }
+        return successBoosters.get(mythicId.toLowerCase(Locale.ROOT));
+    }
+
     /** @return the configured potentiator MythicMobs ids (lowercase, unmodifiable) */
     public @NotNull java.util.Set<String> getSuccessBoosterIds() {
         return Collections.unmodifiableSet(successBoosters.keySet());

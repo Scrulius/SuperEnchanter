@@ -347,6 +347,9 @@ enchant-icons:
   # {base}=base de la rareza, {booster}=lo que aporta el potenciador.
   lore-chance: "<#6C7293>✦ <#A8B2D1>Probabilidad: <#43E97B>{chance}%"
   lore-chance-boosted: "<#6C7293>✦ <#A8B2D1>Probabilidad: <#43E97B>{chance}% <#6C7293>({base}% +<#C084FC>{booster}%<#6C7293>)"
+  # Aviso cuando hay un sello en la ranura pero NO aplica a este encantamiento porque
+  # está atado a otra rareza (aporta 0 y no se gasta). {rarity}=rareza del sello.
+  lore-seal-mismatch: "<#6C7293>✦ <#FF6B6B>Este sello solo afecta a <#FFB347>{rarity}"
   available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}"
   available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
   available-lore-reagent: "<#A8B2D1>Reactivo: <#43E97B>{amount}x {item}"
