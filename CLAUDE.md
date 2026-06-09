@@ -152,6 +152,16 @@ Las dos comparten layout para que se lean igual: fondo **negro** (`BLACK_STAINED
 2. **Encantamientos** de la categoría.
 3. **Niveles** (coste/poder/reactivo).
 - Botón cerrar hace de "atrás" (sube un nivel).
+- **Layout** (fondo negro `BLACK_STAINED_GLASS_PANE`, como yunque/transferencia): cabeza de stats
+  "Mis estadísticas" centrada arriba (slot 4); **cluster de inputs a la izquierda** — icono mesa (19) +
+  input objeto (20) arriba, icono sello (28) + slot sello (29) debajo (el sello sube para top-alinearse
+  con el grid); **grid de ofertas 4×2 desplazado a la derecha** (cols 4-7: slots 22-25 / 31-34;
+  `OFFER_SLOTS`, `offerIndexOf` es dinámico). Power (48), cerrar/atrás (49), guía (50), paginación (46/52).
+- **Estilo unificado de iconos** (no tocar los iconos de encantamiento): *etiquetas de slot* (mesa,
+  sello) = `gradiente+negrita+➜` apuntando a su slot; *paneles de info* (poder, stats, guía) =
+  `gradiente+negrita+glifo` (✦ / 📖); *botones* (cerrar/atrás/paginación) = `color+negrita+glifo`
+  direccional. Viñetas `✦` apagadas (`#6C7293`) para hechos sueltos, prosa en `#A8B2D1`, acción
+  `▶ Clic para…`. El `gui-title` va sin símbolos (se salía del ancho).
 - **Bloqueados se muestran con motivo**: `EnchantingLogic.analyze()` escanea el registry UNA vez
   por ítem (cacheado) → `AnalyzedEnchant` con `BlockReason` (NONE/MAXED/CONFLICT/MISSING_REQUIRED/
   TYPE_LIMIT). Bloqueados = gris con el porqué; no se pueden abrir (eso también evita saltarse el
@@ -369,11 +379,12 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
 - **Visibilidad de los bonus = cabeza de estadísticas (NO por icono)**: los bonus de Magia ya NO se
   listan bajo cada encantamiento (se quitó `appendMagiaLore`/`magia-line`); el coste/probabilidad del
   icono ya salen CON los bonus aplicados (`effectiveCost`+`applyDiscount`, y `appendChanceLore` suma el
-  `successBonus`). Todos los bonus se reúnen en una **cabeza de jugador** (`SLOT_STATS=4`, centro arriba,
-  con la skin del viewer vía `ItemBuilder.skullOwner`): nivel de Magia, +éxito, −coste, reembolso,
-  maná y **+% XP de Magia de la armadura puesta** (`enchant-icons.stats-head-*`). Solo aparece si Magia
-  está activa; se refresca en `fillDecoration` y tras encantar (puede subir de nivel). Helpers de
-  display: `MagiaService.discountPercent/refundChance/manaBonus/xpBonusPercent`. El **+% XP de Magia**
+  `successBonus`). Todos los bonus se reúnen en una **cabeza de jugador** ("Mis estadísticas",
+  `SLOT_STATS=4`, centro arriba, con la skin del viewer vía `ItemBuilder.skullOwner`): nivel de Magia,
+  +éxito, −coste, reembolso y **+% XP de Magia** (`enchant-icons.stats-head-*`). El **maná NO** se lista
+  aquí (lo gastan los hechizos, no la mesa). Solo aparece si Magia está activa; se refresca en
+  `fillDecoration` y tras encantar (puede subir de nivel). Helpers de display:
+  `MagiaService.discountPercent/refundChance/manaBonus/xpBonusPercent`. El **+% XP de Magia**
   (`xpBonusPercent`) se lee **NATIVO** de EcoSkills vía `SuperCore.ecoSkills().effectiveSkillXpMultiplier`
   = `getSkillXPMultiplier` (booster por permiso, global) × el total del efecto libreforge
   `skill_xp_multiplier` para la skill (`EffectSkillXpMultiplier.INSTANCE.getMultiplier(dispatcher, skill)`,
