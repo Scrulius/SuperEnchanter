@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 11
+config-version: 12
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -18,6 +18,15 @@ config-version: 11
 # solo se desactive el plugin y el server siga arrancando.
 fail-safe:
   shutdown-on-critical-error: true
+
+# ─────────────────────────────────────────────
+# GENERAL
+# ─────────────────────────────────────────────
+general:
+  # Mundos donde NO se usan las GUIs custom: el yunque, la mesa de encantamientos y
+  # la muela (grindstone) se quedan COMPLETAMENTE vanilla ahí (útil para un hub o un
+  # mundo creativo). Lista de nombres de mundo. Vacío = GUIs custom en todos lados.
+  gui-disabled-worlds: []
 
 # ─────────────────────────────────────────────
 # CUSTOM ANVIL SETTINGS
@@ -430,14 +439,19 @@ anti-dupe:
 # ─────────────────────────────────────────────
 # LOG DE AUDITORÍA
 # ─────────────────────────────────────────────
-# Registra TODAS las operaciones (forjar / encantar / transferir / extraer) en
-# 'audit.log' dentro de la carpeta del plugin: fecha, jugador, acción, ítem y coste.
-# Es un rastro para que el staff investigue anomalías económicas o abusos; NO
-# previene ni detecta dupes por sí solo, da contexto forense.
+# Registra TODAS las operaciones (forjar / encantar / transferir / extraer / purificar)
+# en 'audit.jsonl' (un registro JSON por línea) dentro de la carpeta del plugin: fecha,
+# jugador, acción, ítems involucrados (con su nombre, id de MythicMobs y encantamientos)
+# y coste. Míralo en juego con '/se audit [jugador]' (GUI paginada con hover de ítems).
+# Es un rastro para que el staff investigue anomalías económicas o abusos; NO previene
+# ni detecta dupes por sí solo, da contexto forense.
 audit-log:
   enabled: true
-  # Además del archivo, vuelca cada línea a la consola del server.
+  # Además del archivo, vuelca cada operación a la consola del server.
   to-console: false
+  # Tamaño (KiB) al que 'audit.jsonl' se rota a 'audit.jsonl.1' (evita crecimiento
+  # ilimitado). 0 o menos = sin rotación. 2048 KiB ≈ miles de operaciones.
+  max-file-kb: 2048
 
 # ─────────────────────────────────────────────
 # CONTROL DE LOOT

@@ -215,9 +215,10 @@ public class AnvilGUI extends AbstractCustomGUI {
         player.sendActionBar(msg.parsed("anvil.forge-success",
                 Map.of("{cost}", cost.displayText())));
 
-        plugin.getAuditLog().record(player, "FORGE",
-                "result=" + AuditLog.describe(forgedItem) + " sacrifice=" + AuditLog.describe(sacrifice),
-                cost);
+        final AuditLog audit = plugin.getAuditLog();
+        audit.record(player, "FORGE", "", cost,
+                audit.snap("result", forgedItem),
+                audit.snap("sacrifice", sacrifice));
 
         updatePreview();
         persistInputItems();
@@ -435,9 +436,9 @@ public class AnvilGUI extends AbstractCustomGUI {
         config.getAnvilSuccessSound().play(player);
         player.sendActionBar(msg.parsed("anvil.purify-success",
                 Map.of("{count}", String.valueOf(curses.size()))));
-        plugin.getAuditLog().record(player, "PURIFY",
-                "item=" + AuditLog.describe(purified) + " curses=" + curses.size(),
-                Cost.xp(0));
+        final AuditLog auditPurify = plugin.getAuditLog();
+        auditPurify.record(player, "PURIFY", "curses=" + curses.size(), Cost.xp(0),
+                auditPurify.snap("item", purified));
 
         updatePreview();
         persistInputItems();

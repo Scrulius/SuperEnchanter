@@ -46,6 +46,11 @@ public final class VanillaBlockListener implements Listener {
             return;
         }
 
+        // World opt-out: in these worlds vanilla anvil/table/grindstone stay usable.
+        if (plugin.getPluginConfig().isGuiWorldDisabled(event.getPlayer().getWorld().getName())) {
+            return;
+        }
+
         InventoryType type = event.getInventory().getType();
         if (type == InventoryType.ANVIL || type == InventoryType.ENCHANTING) {
             event.setCancelled(true);
@@ -61,6 +66,9 @@ public final class VanillaBlockListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPrepareEnchant(@NotNull PrepareItemEnchantEvent event) {
+        if (plugin.getPluginConfig().isGuiWorldDisabled(event.getEnchanter().getWorld().getName())) {
+            return;
+        }
         event.setCancelled(true);
     }
 
@@ -70,6 +78,9 @@ public final class VanillaBlockListener implements Listener {
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEnchantItem(@NotNull EnchantItemEvent event) {
+        if (plugin.getPluginConfig().isGuiWorldDisabled(event.getEnchanter().getWorld().getName())) {
+            return;
+        }
         event.setCancelled(true);
     }
 }

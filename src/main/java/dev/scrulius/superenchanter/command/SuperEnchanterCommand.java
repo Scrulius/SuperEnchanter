@@ -37,7 +37,7 @@ import java.util.TreeSet;
  *       potentiator item.</li>
  *   <li>{@code book <enchant> <level> [player]} — give an enchanted book.</li>
  *   <li>{@code bookshelf} — inspect the enchanted-library marks around you.</li>
- *   <li>{@code audit [lines] [player]} — read the tail of {@code audit.log}.</li>
+ *   <li>{@code audit [player]} — open the paginated audit-log viewer GUI.</li>
  * </ul>
  */
 public final class SuperEnchanterCommand {
@@ -89,13 +89,10 @@ public final class SuperEnchanterCommand {
                         .executes(this::bookshelf))
                 .then(Commands.literal("audit")
                         .requires(src -> src.getSender().hasPermission(PERM_ADMIN))
-                        .executes(ctx -> audit(ctx, 15, null))
-                        .then(Commands.argument("lines", IntegerArgumentType.integer(1, 200))
-                                .executes(ctx -> audit(ctx, IntegerArgumentType.getInteger(ctx, "lines"), null))
-                                .then(Commands.argument("player", StringArgumentType.word())
-                                        .suggests(this::suggestOnline)
-                                        .executes(ctx -> audit(ctx, IntegerArgumentType.getInteger(ctx, "lines"),
-                                                StringArgumentType.getString(ctx, "player"))))))
+                        .executes(ctx -> audit(ctx, null))
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .suggests(this::suggestOnline)
+                                .executes(ctx -> audit(ctx, StringArgumentType.getString(ctx, "player")))))
                 .build();
     }
 
@@ -194,17 +191,28 @@ public final class SuperEnchanterCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    private int audit(@NotNull CommandContext<CommandSourceStack> ctx, int lines, @Nullable String playerFilter) {
-        final List<String> tail = plugin.getAuditLog().tail(lines, playerFilter);
-        if (tail.isEmpty()) {
+    private int audit(@NotNull CommandContext<CommandSourceStack> ctx, @Nullable String playerFilter) {
+        final List<dev.scrulius.superenchanter.util.AuditEntry> entries =
+                plugin.getAuditLog().readRecent(playerFilter);
+        final CommandSender sender = ctx.getSource().getSender();
+
+        if (entries.isEmpty()) {
             msg().send(ctx, "command.audit-empty", Map.of());
             return Command.SINGLE_SUCCESS;
         }
-        msg().send(ctx, "command.audit-header", Map.of("{count}", String.valueOf(tail.size())));
-        for (String line : tail) {
-            // Audit lines are plain text; send them raw (no MiniMessage parsing) to
-            // avoid any stray '<' being interpreted as a tag.
-            ctx.getSource().getSender().sendMessage(net.kyori.adventure.text.Component.text(line));
+
+        // Players get the paginated, hover-rich GUI; the console gets a text dump.
+        if (sender instanceof Player player) {
+            new dev.scrulius.superenchanter.gui.audit.AuditGUI(plugin, player, entries, playerFilter).open();
+            return Command.SINGLE_SUCCESS;
+        }
+
+        final int limit = Math.min(entries.size(), 30);
+        msg().send(ctx, "command.audit-header", Map.of("{count}", String.valueOf(limit)));
+        // entries are newest-first; print the last `limit` in chronological order.
+        for (int i = limit - 1; i >= 0; i--) {
+            sender.sendMessage(net.kyori.adventure.text.Component.text(
+                    dev.scrulius.superenchanter.util.AuditLog.formatConsole(entries.get(i))));
         }
         return Command.SINGLE_SUCCESS;
     }

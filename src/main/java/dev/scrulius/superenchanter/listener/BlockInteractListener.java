@@ -58,6 +58,11 @@ public final class BlockInteractListener implements Listener {
         Material material = clickedBlock.getType();
         Player player = event.getPlayer();
 
+        // World opt-out: leave anvil/table/grindstone fully vanilla in these worlds.
+        if (plugin.getPluginConfig().isGuiWorldDisabled(clickedBlock.getWorld().getName())) {
+            return;
+        }
+
         if (isAnvil(material)) {
             handleAnvilInteract(event, player);
         } else if (material == Material.ENCHANTING_TABLE) {

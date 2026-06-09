@@ -422,6 +422,19 @@ command:
 
   audit-empty: "<#A8B2D1>El log de auditoría está vacío (o no coincide el filtro)."
   audit-header: "<#C084FC><bold>Últimas {count} entradas de auditoría:</bold>"
+  # GUI de auditoría (/se audit). El título no lleva símbolos (se sale del ancho).
+  audit-title: "<dark_gray>Auditoría"
+  audit-filter-all: "todos"
+  audit-prev: "<#A8B2D1><bold>◀ Página anterior</bold>"
+  audit-next: "<#A8B2D1><bold>Página siguiente ▶</bold>"
+  audit-close: "<#FF6B6B><bold>✖ Cerrar</bold>"
+  audit-info-name: "<#C084FC><bold>📖 Página {page}/{pages}</bold>"
+  audit-info-lore:
+    - "<#6C7293>✦ <#A8B2D1>{count} operaciones registradas"
+    - "<#6C7293>✦ <#A8B2D1>Filtro: <white>{filter}"
+    - " "
+    - "<#6C7293>Pasa el ratón por cada operación para ver"
+    - "<#6C7293>los ítems y encantamientos involucrados."
 
 # ─────────────────────────────────────────────
 # CATEGORY & RARITY NAMES

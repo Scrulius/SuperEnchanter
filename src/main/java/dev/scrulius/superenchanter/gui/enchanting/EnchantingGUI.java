@@ -488,12 +488,14 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                             "{magia}", magiaInfo)));
         }
 
-        plugin.getAuditLog().record(player,
+        final var audit = plugin.getAuditLog();
+        final String auditSummary = enchantment.getKey().getKey() + " " + startLevel + " -> " + reachedLevel
+                + (appliedCurse != null ? "  +curse:" + appliedCurse.getKey().getKey() : "");
+        audit.record(player,
                 levelsGained == 0 ? "ENCHANT-X" : (appliedCurse != null ? "ENCHANT-CURSE" : "ENCHANT"),
-                dev.scrulius.superenchanter.util.AuditLog.describe(working)
-                        + " " + enchantment.getKey().getKey() + " " + startLevel + "->" + reachedLevel
-                        + (appliedCurse != null ? " CURSE:" + appliedCurse.getKey().getKey() : ""),
-                new dev.scrulius.superenchanter.economy.Cost(costType, totalCharged));
+                auditSummary,
+                new dev.scrulius.superenchanter.economy.Cost(costType, totalCharged),
+                audit.snap("item", working));
 
         updatePreview();
         persistInputItems();

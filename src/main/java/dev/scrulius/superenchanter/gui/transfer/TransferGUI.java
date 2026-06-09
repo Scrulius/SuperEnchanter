@@ -257,10 +257,10 @@ public final class TransferGUI extends AbstractCustomGUI {
         player.sendActionBar(msg.parsed("transfer.success",
                 Map.of("{count}", String.valueOf(sel.size()))));
 
-        plugin.getAuditLog().record(player, "TRANSFER",
-                moved.toString().trim() + " donor=" + AuditLog.describe(donor)
-                        + " -> " + AuditLog.describe(enchanted),
-                cost);
+        final AuditLog audit = plugin.getAuditLog();
+        audit.record(player, "TRANSFER", moved.toString().trim(), cost,
+                audit.snap("donor", donor),
+                audit.snap("result", enchanted));
 
         updatePreview();
         persistInputItems();
@@ -326,10 +326,10 @@ public final class TransferGUI extends AbstractCustomGUI {
         player.sendActionBar(msg.parsed("transfer.extract-success",
                 Map.of("{count}", String.valueOf(sel.size()))));
 
-        plugin.getAuditLog().record(player, "EXTRACT",
-                pulled.toString().trim() + " donor=" + AuditLog.describe(donor)
-                        + " -> " + AuditLog.describe(book),
-                cost);
+        final AuditLog auditEx = plugin.getAuditLog();
+        auditEx.record(player, "EXTRACT", pulled.toString().trim(), cost,
+                auditEx.snap("donor", donor),
+                auditEx.snap("book", book));
 
         updatePreview();
         persistInputItems();

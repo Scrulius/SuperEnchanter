@@ -97,6 +97,10 @@ public final class PluginConfig {
     // ── Audit log (cached) ──
     private boolean auditLogEnabled;
     private boolean auditLogToConsole;
+    private int auditMaxFileKb;
+
+    // ── General (cached) — worlds where the custom GUIs are NOT used (vanilla stays) ──
+    private java.util.Set<String> guiDisabledWorlds = java.util.Collections.emptySet();
 
     // ── Fail-safe (cached) ──
     private boolean shutdownOnCriticalError;
@@ -254,8 +258,30 @@ public final class PluginConfig {
         loadLootControlSettings();
         loadBannedEnchantmentSettings();
         loadVillagerTradeSettings();
+        loadGeneralSettings();
         loadSounds();
         loadParticles();
+    }
+
+    private void loadGeneralSettings() {
+        java.util.Set<String> worlds = new java.util.HashSet<>();
+        for (String w : config.getStringList("general.gui-disabled-worlds")) {
+            if (w != null && !w.isBlank()) {
+                worlds.add(w.toLowerCase(Locale.ROOT));
+            }
+        }
+        guiDisabledWorlds = worlds;
+    }
+
+    /**
+     * Whether the custom GUIs (anvil / enchanting table / grindstone) should be
+     * skipped in the given world, leaving vanilla behaviour intact there.
+     *
+     * @param worldName the world name
+     * @return {@code true} if the custom GUIs are disabled for that world
+     */
+    public boolean isGuiWorldDisabled(@NotNull String worldName) {
+        return guiDisabledWorlds.contains(worldName.toLowerCase(Locale.ROOT));
     }
 
     // ────────────────────────────────────────────────────────────
@@ -951,6 +977,7 @@ public final class PluginConfig {
         costDiscountsEnabled = config.getBoolean("cost-discounts.enabled", true);
         auditLogEnabled = config.getBoolean("audit-log.enabled", true);
         auditLogToConsole = config.getBoolean("audit-log.to-console", false);
+        auditMaxFileKb = config.getInt("audit-log.max-file-kb", 2048);
         shutdownOnCriticalError = config.getBoolean("fail-safe.shutdown-on-critical-error", true);
     }
 
@@ -1050,6 +1077,9 @@ public final class PluginConfig {
 
     /** @return whether audit lines are also echoed to the server console */
     public boolean isAuditLogToConsole() { return auditLogToConsole; }
+
+    /** @return the size (KiB) at which {@code audit.jsonl} is rotated to {@code .1}; ≤0 disables rotation */
+    public int getAuditMaxFileKb() { return auditMaxFileKb; }
 
     private void loadSounds() {
         anvilSuccessSound = parseSound("anvil-success", "block.anvil.use");

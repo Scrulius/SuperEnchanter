@@ -98,8 +98,11 @@ nos pasó con AnvilGUI). Siempre **reinicio completo** tras desplegar.
   `CostService` (canAfford/deduct/balanceText + `effectiveCost`/`discountMultiplier`, multi-moneda
   compartido por yunque, mesa y transferencia).
 - `util/` — ItemBuilder, MiniMessageUtil, EnchantmentHelper, CooldownManager,
-  PendingItemStore, ConfigUpdater, EnchantedBookshelfManager, `AuditLog` (rastro de operaciones
-  a `audit.log`; línea construida en main thread, I/O de archivo async; gateado por `audit-log.enabled`).
+  PendingItemStore, ConfigUpdater, EnchantedBookshelfManager, `AuditEntry` (DTO del registro +
+  `ItemSnapshot` enriquecido), `AuditLog` (rastro de operaciones **estructurado** a `audit.jsonl`,
+  un JSON por línea vía Gson; entry construida en main thread —`snap()` lee el ítem—, I/O async;
+  rotación por tamaño; gateado por `audit-log.enabled`).
+- `gui/audit/` — `AuditGUI` (visor paginado solo-lectura del audit; ver Comandos).
 
 ---
 
@@ -478,15 +481,24 @@ Sistema de riesgo/sumidero alrededor de las maldiciones (`type: curse`), default
   (`sharpness`): Brigadier `word()` **no acepta `:`**, así que se resuelve por ruta (prioriza
   namespace `minecraft`). `superenchanter.admin`.
 - `bookshelf` — inspecciona las marcas de librería del **chunk actual** (pos→id→poder). Solo jugador.
-- `audit [líneas] [jugador]` — vuelca el final de `audit.log` (`AuditLog.tail`, filtro por substring).
-  Las líneas se mandan como `Component.text` SIN parsear MiniMessage (un `<` del log no es un tag).
+- `audit [jugador]` — para un jugador abre el **GUI paginado** (`gui/audit/AuditGUI`): un icono por
+  operación (material del ítem resultante + glow si tenía encantamientos), **hover = ítems, nombres,
+  id MM y encantamientos** + fecha/lugar/coste; botones prev/info/next/cerrar (slots 48/49/50/53,
+  45/página). Lee `AuditLog.readRecent(filtro)` (newest-first, cap `MAX_LOAD`). Para la **consola**
+  vuelca texto (`AuditLog.formatConsole`). El registro es estructurado (`audit.jsonl`), NO texto plano.
   `superenchanter.admin`.
 
 Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (default op).
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 11`. Corre en cada reload.
+  conserva comentarios. `config-version: 12`. Corre en cada reload.
+- **`general.gui-disabled-worlds`** (lista de mundos): ahí el yunque/mesa/grindstone quedan
+  **vanilla** (no se interceptan). Lo respetan `BlockInteractListener` (no abre la GUI) **y**
+  `VanillaBlockListener` (no cancela el inventario vanilla ni los eventos de encantar) →
+  `PluginConfig.isGuiWorldDisabled`. Útil para hub/creativo.
+- **`audit-log.max-file-kb`** (default 2048): tamaño al que `audit.jsonl` rota a `.1` (anti-crecimiento
+  ilimitado); 0 = sin rotación.
 - **`enchanting.rarity-cost-type`** (mapa rareza→moneda): override del `cost-type` global por rareza
   (las que no aparezcan heredan el global). Se usa para que **Divino se cobre en PLAYER_POINTS**
   (premium) mientras el resto sigue en XP. Lo resuelve `PluginConfig.getEnchantingCostType(rarityId)`
