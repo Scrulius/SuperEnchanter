@@ -100,17 +100,17 @@ enchanting:
   gui-title: "<gradient:#C084FC:#7C3AED><bold>✦ Mesa de Encantamientos ✦</bold></gradient>"
 
   # Table decoration icon
-  table-deco-name: "<gradient:#C084FC:#A855F7><bold>Mesa de Encantamientos</bold></gradient>"
+  table-deco-name: "<gradient:#C084FC:#7C3AED><bold>✦ Mesa de Encantamientos</bold></gradient>"
   table-deco-lore:
     - "<#A8B2D1>Coloca un ítem en el slot"
-    - "<#A8B2D1>de la derecha para ver los"
+    - "<#A8B2D1>de la derecha para ver sus"
     - "<#A8B2D1>encantamientos disponibles."
 
   # Close button
-  close-name: "<#FF6B6B><bold>Cerrar"
+  close-name: "<#FF6B6B><bold>✘ Cerrar</bold>"
 
   # Back button
-  back-name: "<#43E97B>◀ Atrás"
+  back-name: "<#43E97B><bold>◀ Atrás</bold>"
   back-lore:
     - "<#6C7293>Clic para volver a la lista"
 
@@ -177,8 +177,8 @@ enchanting:
     - "<#A8B2D1>Mete a la derecha un <#C084FC>Sello<#A8B2D1> de"
     - "<#A8B2D1>rareza para garantizar ese encantamiento."
     - ""
-    - "<#FFD93D>✦ <#A8B2D1>Solo aplica a su rareza."
-    - "<#FFD93D>✦ <#A8B2D1>Se consume al usarlo."
+    - "<#6C7293>✦ <#A8B2D1>Solo aplica a su rareza."
+    - "<#6C7293>✦ <#A8B2D1>Se consume al usarlo."
 
   # Aviso al intentar construir contra una librería encantada sin agacharse.
   library-sneak-build: "<#FFD93D>✦ <#A8B2D1>Agáchate <#6C7293>(Shift)<#A8B2D1> para construir contra la librería."
@@ -190,19 +190,19 @@ enchanting:
   not-enough-reagent: "<#FF6B6B>✘ <#A8B2D1>Te falta el reactivo: <#FFB347>{amount}x {item}<#A8B2D1>."
 
   # Pagination
-  prev-page-name: "<#43E97B>◀ Página anterior"
-  prev-page-lore: "<#A8B2D1>Página {current}/{total}"
-  next-page-name: "<#43E97B>Siguiente página ▶"
-  next-page-lore: "<#A8B2D1>Página {current}/{total}"
+  prev-page-name: "<#43E97B><bold>◀ Página anterior</bold>"
+  prev-page-lore: "<#6C7293>Página {current}/{total}"
+  next-page-name: "<#43E97B><bold>Página siguiente ▶</bold>"
+  next-page-lore: "<#6C7293>Página {current}/{total}"
 
   # Bookshelf power icon. {current}=total, {vanilla}=estanterías normales (con tope),
   # {library}=librerías encantadas, {max}=poder máximo.
-  power-name: "<gradient:#64DFDF:#38D9A9><bold>Poder de Estantería</bold></gradient>"
+  power-name: "<gradient:#64DFDF:#38D9A9><bold>✦ Poder de Estantería</bold></gradient>"
   power-lore:
-    - "<#A8B2D1>Poder: <#E8E8FF>{current}<#6C7293>/{max}"
+    - "<#6C7293>✦ <#A8B2D1>Poder: <#E8E8FF>{current}<#6C7293>/{max}"
     - ""
-    - "<#6C7293>• <#A8B2D1>Estanterías: <#E8E8FF>{vanilla}"
-    - "<#6C7293>• <#C084FC>Librerías encantadas: <#E8E8FF>{library}"
+    - "<#6C7293>✦ <#A8B2D1>Estanterías: <#E8E8FF>{vanilla}"
+    - "<#6C7293>✦ <#C084FC>Librerías encantadas: <#E8E8FF>{library}"
     - ""
     - "<#A8B2D1>Las estanterías normales topan pronto:"
     - "<#A8B2D1>los encantamientos <#C084FC>top<#A8B2D1> exigen"
