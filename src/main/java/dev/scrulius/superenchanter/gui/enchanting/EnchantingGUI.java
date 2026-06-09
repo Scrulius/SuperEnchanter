@@ -35,8 +35,8 @@ import java.util.Set;
 public final class EnchantingGUI extends AbstractCustomGUI {
 
     // ── Slot constants ──────────────────────────────────────────────────────
-    /** Player-head panel with the viewer's Magia bonuses (only when Magia is active). */
-    private static final int SLOT_STATS = 10;
+    /** Player-head panel with the viewer's Magia bonuses (top-centre; only when Magia is active). */
+    private static final int SLOT_STATS = 4;
     private static final int SLOT_INPUT = 19;
     private static final int SLOT_TABLE_DECO = 28;
     /** Decorative label that points at the potentiator slot (only when chance is enabled). */
@@ -57,9 +57,9 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     private static final Set<Integer> OFFER_SLOTS_SET = Set.copyOf(OFFER_SLOTS);
 
     /** Decorative panes are read-only, so build them once and reuse the references. */
-    private static final ItemStack FILLER_PANE = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
+    private static final ItemStack FILLER_PANE = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
             .name("<#2D2D3D> ").build();
-    private static final ItemStack EMPTY_OFFER_PANE = new ItemBuilder(Material.LIGHT_GRAY_STAINED_GLASS_PANE)
+    private static final ItemStack EMPTY_OFFER_PANE = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
             .name("<#4A4A5E> ").build();
 
     // ── State ───────────────────────────────────────────────────────────────
