@@ -9,8 +9,6 @@ import dev.scrulius.superenchanter.integration.EcoEnchantsHook;
 import dev.scrulius.superenchanter.util.EnchantmentHelper;
 import dev.scrulius.superenchanter.util.ItemBuilder;
 import io.papermc.paper.datacomponent.DataComponentTypes;
-import io.papermc.paper.registry.RegistryAccess;
-import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -20,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,45 +91,46 @@ public final class EnchantingLogic {
     }
 
     /**
-     * Scans the enchantment registry <b>once</b> and returns every enchantment
-     * relevant to the item (correct target, not blacklisted), each annotated with
-     * its category and a {@link BlockReason}. The GUI caches this per item so that
-     * navigating categories and levels never triggers another scan.
+     * Returns every enchantment relevant to the item (correct target, not
+     * blacklisted), each annotated with its category and a {@link BlockReason}. The
+     * GUI caches this per item so that navigating categories and levels never
+     * triggers another scan.
+     * <p>
+     * The item-independent metadata (type, rarity, name, max level, required/conflict
+     * sets, type limit) comes from the precomputed {@link EnchantmentIndex} built once
+     * at startup, so this only does the genuinely item-dependent work: the target
+     * check plus the present-set classification.
+     * </p>
      */
     @NotNull
     public static List<AnalyzedEnchant> analyze(
             @NotNull ItemStack item,
             @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
 
-        final PluginConfig config = plugin.getPluginConfig();
         final EcoEnchantsHook eco = plugin.getEcoHook();
+        final EnchantmentIndex index = plugin.getEnchantmentIndex();
         final Map<Enchantment, Integer> current = EnchantmentHelper.getEnchantments(item);
         final Set<Enchantment> present = current.keySet();
         final List<AnalyzedEnchant> result = new ArrayList<>();
-        final var registry = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
 
-        for (Enchantment ench : registry) {
-            final String rawType = eco.getTypeId(ench);
-            if (config.isEnchantDisabled(ench, rawType)) {
-                continue;
-            }
+        for (EnchantmentIndex.Entry entry : index.candidates()) {
+            final Enchantment ench = entry.enchantment();
             if (!eco.appliesToItem(ench, item)) {
                 continue;
             }
 
-            final String typeId = (rawType == null || rawType.isBlank()) ? "other" : rawType;
             final int currentLevel = current.getOrDefault(ench, 0);
-            final int maxLevel = EnchantmentHelper.getMaxLevel(ench);
+            final int maxLevel = entry.maxLevel();
 
             // Only adding a NEW enchant can be blocked by required/conflict/type-limit;
             // upgrading an already-present one is always allowed (until maxed). Lists are
             // computed lazily in precedence order; the pure classifyBlock decides the reason.
             final boolean isNew = currentLevel == 0;
-            final List<Enchantment> missing = isNew ? missingRequired(ench, present, eco) : List.of();
+            final List<Enchantment> missing = isNew ? missingRequired(entry, present) : List.of();
             final List<Enchantment> conflicts =
-                    (isNew && missing.isEmpty()) ? conflictingPresent(ench, present, eco) : List.of();
+                    (isNew && missing.isEmpty()) ? conflictingPresent(entry, present, index) : List.of();
             final boolean typeLimit = isNew && missing.isEmpty() && conflicts.isEmpty()
-                    && typeLimitReached(ench, present, eco);
+                    && typeLimitReached(entry, present, index);
 
             final BlockReason reason = classifyBlock(
                     currentLevel, maxLevel, !missing.isEmpty(), !conflicts.isEmpty(), typeLimit);
@@ -142,13 +140,8 @@ public final class EnchantingLogic {
                 default -> List.of();
             };
 
-            String name = eco.getDisplayName(ench, 0);
-            if (name.isEmpty()) {
-                name = EnchantmentHelper.prettyName(ench);
-            }
-
-            result.add(new AnalyzedEnchant(ench, name, typeId,
-                    categoryDisplayName(plugin, typeId), eco.getRarityId(ench),
+            result.add(new AnalyzedEnchant(ench, entry.displayName(), entry.typeId(),
+                    entry.categoryName(), entry.rarityId(),
                     currentLevel, maxLevel, reason, detail));
         }
         return result;
@@ -196,7 +189,7 @@ public final class EnchantingLogic {
      * title-cased version of the id.
      */
     @NotNull
-    private static String categoryDisplayName(
+    static String categoryDisplayName(
             @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin, @NotNull String typeId) {
         final String key = "category-names." + typeId.toLowerCase(java.util.Locale.ROOT);
         return plugin.getMessages().hasKey(key) ? plugin.getMessages().raw(key) : prettyId(typeId);
@@ -265,15 +258,13 @@ public final class EnchantingLogic {
 
     // ── Block-reason helpers ────────────────────────────────────────────────
 
-    private static List<Enchantment> missingRequired(@NotNull Enchantment ench,
-                                                     @NotNull Set<Enchantment> present,
-                                                     @NotNull EcoEnchantsHook eco) {
-        final List<Enchantment> required = eco.getRequired(ench);
-        if (required.isEmpty()) {
+    private static List<Enchantment> missingRequired(@NotNull EnchantmentIndex.Entry entry,
+                                                     @NotNull Set<Enchantment> present) {
+        if (entry.required().isEmpty()) {
             return List.of();
         }
         final List<Enchantment> missing = new ArrayList<>();
-        for (Enchantment r : required) {
+        for (Enchantment r : entry.required()) {
             if (!present.contains(r)) {
                 missing.add(r);
             }
@@ -281,23 +272,23 @@ public final class EnchantingLogic {
         return missing;
     }
 
-    private static List<Enchantment> conflictingPresent(@NotNull Enchantment ench,
+    private static List<Enchantment> conflictingPresent(@NotNull EnchantmentIndex.Entry entry,
                                                         @NotNull Set<Enchantment> present,
-                                                        @NotNull EcoEnchantsHook eco) {
+                                                        @NotNull EnchantmentIndex index) {
         if (present.isEmpty()) {
             return List.of();
         }
-        final boolean enchAll = eco.conflictsWithEverything(ench);
-        final Set<Enchantment> enchConflicts = new HashSet<>(eco.getConflicts(ench));
+        final Enchantment ench = entry.enchantment();
         final List<Enchantment> out = new ArrayList<>();
         for (Enchantment other : present) {
             if (other.equals(ench)) {
                 continue;
             }
-            final boolean conflict = enchAll
-                    || eco.conflictsWithEverything(other)
-                    || enchConflicts.contains(other)
-                    || eco.getConflicts(other).contains(ench)
+            final EnchantmentIndex.Entry oe = index.get(other);
+            final boolean conflict = entry.conflictsAll()
+                    || (oe != null && oe.conflictsAll())
+                    || entry.conflicts().contains(other)
+                    || (oe != null && oe.conflicts().contains(ench))
                     || ench.conflictsWith(other) || other.conflictsWith(ench);
             if (conflict) {
                 out.add(other);
@@ -306,20 +297,21 @@ public final class EnchantingLogic {
         return out;
     }
 
-    private static boolean typeLimitReached(@NotNull Enchantment ench,
+    private static boolean typeLimitReached(@NotNull EnchantmentIndex.Entry entry,
                                             @NotNull Set<Enchantment> present,
-                                            @NotNull EcoEnchantsHook eco) {
-        final int limit = eco.getTypeLimit(ench);
+                                            @NotNull EnchantmentIndex index) {
+        final int limit = entry.typeLimit();
         if (limit == Integer.MAX_VALUE) {
             return false;
         }
-        final String typeId = eco.getTypeId(ench);
-        if (typeId == null) {
-            return false;
-        }
+        final String typeId = entry.typeId();
         int count = 0;
         for (Enchantment other : present) {
-            if (!other.equals(ench) && typeId.equalsIgnoreCase(eco.getTypeId(other))) {
+            if (other.equals(entry.enchantment())) {
+                continue;
+            }
+            final EnchantmentIndex.Entry oe = index.get(other);
+            if (oe != null && typeId.equalsIgnoreCase(oe.typeId())) {
                 count++;
             }
         }

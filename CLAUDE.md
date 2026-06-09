@@ -165,10 +165,19 @@ Las dos comparten layout para que se lean igual: fondo **negro** (`BLACK_STAINED
   `gradiente+negrita+glifo` (✦ / 📖); *botones* (cerrar/atrás/paginación) = `color+negrita+glifo`
   direccional. Viñetas `✦` apagadas (`#6C7293`) para hechos sueltos, prosa en `#A8B2D1`, acción
   `▶ Clic para…`. El `gui-title` va sin símbolos (se salía del ancho).
-- **Bloqueados se muestran con motivo**: `EnchantingLogic.analyze()` escanea el registry UNA vez
-  por ítem (cacheado) → `AnalyzedEnchant` con `BlockReason` (NONE/MAXED/CONFLICT/MISSING_REQUIRED/
-  TYPE_LIMIT). Bloqueados = gris con el porqué; no se pueden abrir (eso también evita saltarse el
-  chequeo de conflicto). Usa el modelo real de EcoEnchants (targets/conflicts/required/typeLimit).
+- **Bloqueados se muestran con motivo**: `EnchantingLogic.analyze()` → `AnalyzedEnchant` con
+  `BlockReason` (NONE/MAXED/CONFLICT/MISSING_REQUIRED/TYPE_LIMIT). Bloqueados = gris con el porqué; no
+  se pueden abrir (eso también evita saltarse el chequeo de conflicto). Usa el modelo real de
+  EcoEnchants (targets/conflicts/required/typeLimit).
+- **Pre-índice (`EnchantmentIndex`, perf)**: toda la metadata de encantamiento **independiente del
+  ítem** (typeId/rareza/nombre/maxLevel/sets de requerido y conflicto + `conflictsAll`/typeLimit +
+  nombre de categoría + flag de blacklist) se **precomputa UNA vez al arrancar** en una estructura
+  inmutable (`EnchantmentIndex.build`), y se reconstruye en `/se reload`. Antes `analyze()` recorría
+  todo el registry POR ítem y por candidato **asignaba un `ArrayList` nuevo** en `getConflicts`/
+  `getRequired` (O(presentes) veces) — ahora `analyze()` solo hace lo dependiente del ítem
+  (`appliesToItem` + clasificación con lookups O(1) en los sets ya hechos). Lo guarda el plugin
+  (`getEnchantmentIndex()`, build eager en `onEnable` tras el self-check, lazy como fallback; salta
+  bajo MockBukkit porque toca eco). El GUI sigue cacheando el `analyze()` por ítem encima de esto.
 - **Requisitos de uso visibles ANTES de encantar**: los iconos (tier-2 lista y tier-3 niveles)
   añaden las **líneas de requisito** del encantamiento vía `EcoEnchantsHook.getRequirementLines(ench)`
   (`EnchantingLogic.appendRequirementLines`). ⚠️ Gotcha clave: los `not-met-lines` (p.ej. "Requiere

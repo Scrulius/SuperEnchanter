@@ -52,6 +52,7 @@ public class SuperEnchanterPlugin extends JavaPlugin {
     private VaultHook vaultHook;
     private PlayerPointsHook playerPointsHook;
     private MythicMobsHook mythicMobsHook;
+    private dev.scrulius.superenchanter.gui.enchanting.EnchantmentIndex enchantmentIndex;
     private CostService costService;
     private dev.scrulius.superenchanter.integration.MagiaService magiaService; // null if SuperCore absent
     private AuditLog auditLog;
@@ -125,6 +126,9 @@ public class SuperEnchanterPlugin extends JavaPlugin {
         // lines not loading) is loud in the console. Skipped under MockBukkit.
         if (!isMockEnvironment()) {
             ecoHook.logIntegrationSelfCheck(getLogger());
+            // Warm the item-independent enchantment index now (off the first player's
+            // table open) — reuses the wrap cache the self-check just populated.
+            enchantmentIndex = dev.scrulius.superenchanter.gui.enchanting.EnchantmentIndex.build(this);
         }
 
         // ── Register Listeners ──
@@ -250,6 +254,20 @@ public class SuperEnchanterPlugin extends JavaPlugin {
         return ecoHook;
     }
 
+    /**
+     * @return the precomputed, item-independent enchantment index used by the
+     *         enchanting analysis. Built eagerly at enable; lazy-builds here as a
+     *         fallback if it was invalidated (e.g. right after a reload).
+     */
+    public @NotNull dev.scrulius.superenchanter.gui.enchanting.EnchantmentIndex getEnchantmentIndex() {
+        var idx = enchantmentIndex;
+        if (idx == null) {
+            idx = dev.scrulius.superenchanter.gui.enchanting.EnchantmentIndex.build(this);
+            enchantmentIndex = idx;
+        }
+        return idx;
+    }
+
     /** @return the Vault economy soft-hook */
     public @NotNull VaultHook getVaultHook() {
         return vaultHook;
@@ -299,6 +317,11 @@ public class SuperEnchanterPlugin extends JavaPlugin {
         // lines) reflect after /ecoenchants reload without a full restart.
         if (ecoHook != null) {
             ecoHook.clearCaches();
+            // Rebuild the enchantment index from the reloaded config + fresh eco data
+            // (blacklist, category names, conflicts may all have changed).
+            enchantmentIndex = isMockEnvironment()
+                    ? null
+                    : dev.scrulius.superenchanter.gui.enchanting.EnchantmentIndex.build(this);
         }
         if (magiaService != null) {
             magiaService.reload();
