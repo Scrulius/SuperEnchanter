@@ -197,17 +197,18 @@ public final class MagiaService {
         if (xp <= 0) return 0.0;
         Skill s = skill();
         if (s != null) {
-            // We grant XP RAW (giveSkillXp) instead of natural (gainSkillXp) on purpose:
-            // the natural path sends EcoSkills' own "+xp" action bar, which collides with
-            // the table's own action-bar feedback. Raw sends no message — but it also
-            // skips the XP multipliers, so we re-apply the effective multiplier ourselves
-            // (the SAME value the stats head shows: mage-armor skill_xp_multiplier ×
-            // permission boosters). Net XP is identical to the natural path, the mage
-            // build is still honoured, and OTHER skills — gained through normal gameplay,
-            // not this table — keep their natural action-bar feedback untouched.
-            double mult = SuperCore.ecoSkills().effectiveSkillXpMultiplier(player, s);
-            SuperCore.ecoSkills().giveSkillXp(player, s, xp * mult);
-            return xp; // base (pre-multiplier) for the {magia} suffix
+            // Grant via the NATURAL path: it fires PlayerSkillXPGainEvent and applies XP
+            // multipliers. This is REQUIRED for two independent reasons:
+            //   1) the libreforge skill_xp_multiplier effect (mage-armor enchants) listens
+            //      to that event;
+            //   2) AxBoosters' "ecoskills:experience" booster also works by listening to
+            //      that event and multiplying getGainedXP/setGainedXP — raw giveSkillXp
+            //      would silently skip ANY booster active for the player.
+            // The downside (EcoSkills' own "+xp" action bar colliding with the table's
+            // feedback) is solved on the EcoSkills config side (gain-xp feedback moved to
+            // a boss bar), NOT by going raw. The {magia} suffix shows the base XP.
+            SuperCore.ecoSkills().gainSkillXp(player, s, xp);
+            return xp;
         }
         return 0.0;
     }
