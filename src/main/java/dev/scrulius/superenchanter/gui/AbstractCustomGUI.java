@@ -62,10 +62,26 @@ public abstract class AbstractCustomGUI implements InventoryHolder {
     protected AbstractCustomGUI(@NotNull SuperEnchanterPlugin plugin,
                                  @NotNull Player player,
                                  @NotNull Component title) {
+        this(plugin, player, title, 54);
+    }
+
+    /**
+     * Constructs a new custom GUI with an explicit inventory size (multiple of 9),
+     * for the compact 3-row menus.
+     *
+     * @param plugin the owning plugin instance
+     * @param player the player who will view this GUI
+     * @param title  the inventory title rendered as an Adventure {@link Component}
+     * @param size   the inventory size in slots (9..54, multiple of 9)
+     */
+    protected AbstractCustomGUI(@NotNull SuperEnchanterPlugin plugin,
+                                 @NotNull Player player,
+                                 @NotNull Component title,
+                                 int size) {
         this.plugin = plugin;
         this.player = player;
         this.msg = plugin.getMessages();
-        this.inventory = Bukkit.createInventory(this, 54, title);
+        this.inventory = Bukkit.createInventory(this, size, title);
     }
 
     // ────────────────────────────────────────────────────────────

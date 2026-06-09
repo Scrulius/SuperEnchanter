@@ -127,20 +127,21 @@ enchanting:
   guide-lore:
     - "<#C084FC><bold>1 · Pasos</bold>"
     - "<#A8B2D1>Pon un ítem en el slot."
-    - "<#A8B2D1>Elige categoría, luego el"
-    - "<#A8B2D1>encantamiento, luego un nivel."
+    - "<#A8B2D1>Elige categoría y clica el"
+    - "<#A8B2D1>encantamiento: cada clic es"
+    - "<#A8B2D1>UN intento del siguiente nivel."
     - ""
-    - "<#43E97B><bold>2 · Subida por peldaños</bold>"
-    - "<#A8B2D1>Subes nivel a nivel. Si fallas"
-    - "<#A8B2D1>uno, <#E8E8FF>conservas lo ya logrado<#A8B2D1>"
-    - "<#A8B2D1>y solo pierdes ese peldaño."
-    - "<#A8B2D1>Cada peldaño gasta XP y reactivo"
-    - "<#A8B2D1>aunque falle (ese es el coste)."
+    - "<#43E97B><bold>2 · Subida secuencial</bold>"
+    - "<#A8B2D1>Solo se sube nivel a nivel"
+    - "<#A8B2D1>(I → II → III...). No hay saltos."
+    - "<#A8B2D1>Cada intento gasta <#E8E8FF>XP<#A8B2D1> aunque"
+    - "<#A8B2D1>falle (ese es el coste)."
     - ""
-    - "<#FFD93D><bold>3 · Probabilidad y sellos</bold>"
-    - "<#A8B2D1>Las rarezas altas pueden fallar."
-    - "<#A8B2D1>Mete un <#C084FC>Sello<#A8B2D1> en su slot para"
-    - "<#A8B2D1>garantizar TODO el ascenso."
+    - "<#FFD93D><bold>3 · Riesgo real</bold>"
+    - "<#A8B2D1>El icono muestra tu % exacto."
+    - "<#A8B2D1>Si fallas, puede además <#FF6B6B>bajar"
+    - "<#FF6B6B>un nivel<#A8B2D1> lo ya conseguido."
+    - "<#A8B2D1>Sube <#C084FC>Magia<#A8B2D1> para mejorar el %."
     - ""
     - "<#5EF1FF><bold>4 · Poder de librería</bold>"
     - "<#A8B2D1>Las rarezas y niveles altos piden"
@@ -149,7 +150,8 @@ enchanting:
     - "<#6C7293>Las estanterías normales topan pronto."
     - ""
     - "<#FF4D4D><bold>5 · Maldiciones</bold>"
-    - "<#A8B2D1>Riesgo bajo de maldecir el ítem."
+    - "<#A8B2D1>Cada éxito arriesga maldición"
+    - "<#A8B2D1>(% en el icono; sube con la rareza)."
     - "<#A8B2D1>Se cura en el <#E8E8FF>yunque<#A8B2D1> con un"
     - "<#A8B2D1>Sello Purificador."
 
@@ -157,15 +159,17 @@ enchanting:
   maxed-actionbar: "<#FF6B6B>✘ Ya tiene el nivel máximo"
   cooldown-actionbar: "<#FF6B6B>✘ Espera un momento..."
   enchant-success: "<#43E97B>✔ <#E8E8FF>{enchantment} <#43E97B>aplicado con éxito{magia}"
-  # Ascenso por pasos detenido en un nivel intermedio (falló el siguiente peldaño o sin recursos).
-  enchant-partial: "<#FFD93D>➤ <#E8E8FF>{enchantment} <#FFD93D>— falló al subir a {next}, conservas lo logrado{refund}{magia}"
   enchant-blocked: "<#FF6B6B>✘ <#A8B2D1>Ese encantamiento no se puede aplicar ahora mismo."
   # Fallo del encantamiento probabilístico (el coste se consume igual).
   enchant-fail: "<#FF6B6B>✘ <#E8E8FF>{enchantment} <#FF6B6B>falló <#6C7293>(prob. {chance}%) — perdiste el coste.{magia}"
   # Fallo PERO la sub-habilidad Reembolso Arcano (Magia) te devolvió el coste.
   enchant-fail-refund: "<#E8E8FF>{enchantment} <#FF6B6B>falló <#6C7293>(prob. {chance}%) <#C084FC>— Reembolso Arcano: recuperas {cost}.{magia}"
-  # Sufijo de reembolso anexado al feedback parcial ({refund}). Vacío si no hubo reembolso.
-  refund-suffix: " <#C084FC>+{cost} reembolsado"
+  # Fallo CON penalización: el encantamiento BAJÓ un nivel ({level} = nivel resultante).
+  enchant-downgrade: "<#FF4D4D>⬇ <#E8E8FF>{enchantment} <#FF6B6B>falló y bajó a <#E8E8FF>{level}<#FF6B6B>.{refund}{magia}"
+  # Fallo con penalización en nivel I: el encantamiento se PERDIÓ por completo.
+  enchant-downgrade-lost: "<#FF4D4D>⬇ <#E8E8FF>{enchantment} <#FF6B6B>falló y el encantamiento se perdió.{refund}{magia}"
+  # Sufijo de reembolso anexado al feedback de fallo ({refund}). Vacío si no hubo reembolso.
+  refund-suffix: " <#C084FC>+{cost} reembolsado."
   # El encantamiento entró pero el ítem se MALDIJO (purifícalo en el yunque con un Sello Purificador).
   cursed: "<#8E0E0E>☠ <#E8E8FF>{enchantment} <#43E97B>aplicado <#6C7293>— ¡maldecido con <#FF4D4D>{curse}<#6C7293>! Púrificalo en el yunque con un Sello Purificador.{magia}"
   # Sufijo de XP de Magia que se anexa al feedback de encantar ({magia}). Vacío si no se ganó XP.
@@ -173,23 +177,13 @@ enchanting:
   # Gating de Magia (carril 5, OFF por defecto): rareza bloqueada hasta cierto nivel de Magia.
   magia-locked: "<#FF6B6B>✘ <#A8B2D1>Necesitas <#C084FC>Magia nivel {level}<#A8B2D1> para encantar esta rareza."
 
-  # Etiqueta del slot de POTENCIADOR (solo aparece con success-chance activo).
-  booster-label-name: "<gradient:#C084FC:#7C3AED><bold>Sello ➜</bold></gradient>"
-  booster-label-lore:
-    - "<#A8B2D1>Mete a la derecha un <#C084FC>Sello<#A8B2D1> de"
-    - "<#A8B2D1>rareza para garantizar ese encantamiento."
-    - ""
-    - "<#6C7293>✦ <#A8B2D1>Solo aplica a su rareza."
-    - "<#6C7293>✦ <#A8B2D1>Se consume al usarlo."
-
   # Aviso al intentar construir contra una librería encantada sin agacharse.
   library-sneak-build: "<#FFD93D>✦ <#A8B2D1>Agáchate <#6C7293>(Shift)<#A8B2D1> para construir contra la librería."
 
-  # Cost / Power / Reagent checks (action bar). {cost} y {balance} ya vienen
+  # Cost / Power checks (action bar). {cost} y {balance} ya vienen
   # formateados según la moneda (enchanting.cost-type): "39 XP", "$1,500", "25 Tokens".
   not-enough-xp: "<#FF6B6B>✘ <#A8B2D1>¡No tienes suficiente! Necesitas <#FFB347>{cost}<#A8B2D1> (tienes <#FFB347>{balance}<#A8B2D1>)."
   not-enough-power: "<#FF6B6B>✘ <#A8B2D1>¡Necesitas más <#C084FC>Bookshelf Power<#A8B2D1>! <#FFB347>{current}<#6C7293>/<#FFB347>{required}"
-  not-enough-reagent: "<#FF6B6B>✘ <#A8B2D1>Te falta el reactivo: <#FFB347>{amount}x {item}<#A8B2D1>."
 
   # Pagination
   prev-page-name: "<#43E97B><bold>◀ Página anterior</bold>"
@@ -197,11 +191,11 @@ enchanting:
   next-page-name: "<#43E97B><bold>Página siguiente ▶</bold>"
   next-page-lore: "<#6C7293>Página {current}/{total}"
 
-  # Bookshelf power icon. {current}=total, {vanilla}=estanterías normales (con tope),
-  # {library}=librerías encantadas, {max}=poder máximo.
+  # Bookshelf power icon. {bar}=barra de progreso, {current}=total, {vanilla}=estanterías
+  # normales (con tope), {library}=librerías encantadas, {max}=poder máximo.
   power-name: "<gradient:#64DFDF:#38D9A9><bold>✦ Poder de Estantería</bold></gradient>"
   power-lore:
-    - "<#6C7293>Poder total: <#E8E8FF>{current}<#6C7293>/{max}"
+    - "{bar} <#E8E8FF>{current}<#6C7293>/{max}"
     - ""
     - "<#6C7293>De estanterías normales: <#E8E8FF>{vanilla}"
     - "<#6C7293>De librerías encantadas: <#C084FC>{library}"
@@ -334,10 +328,7 @@ enchant-icons:
     - "<#A8B2D1>Este encantamiento ya está"
     - "<#A8B2D1>al nivel máximo."
 
-  # Tier 1 available
-  tier1-lore: "<#FFD93D>▶ <#43E97B>Clic para ver niveles"
-
-  # Tier 1 blocked (incompatible) — shows WHY it can't be applied
+  # Blocked (incompatible) — shows WHY it can't be applied
   blocked-name: "<#6C7293><bold><st>{name}</st></bold>"
   blocked-conflict: "<#FF6B6B>✘ Conflicto con: <#A8B2D1>{enchantments}"
   blocked-required: "<#FF6B6B>✘ Requiere antes: <#A8B2D1>{enchantments}"
@@ -358,14 +349,16 @@ enchant-icons:
   # vía rarity-names; {current}/{max} son números romanos.
   lore-rarity: "<#6C7293>✦ <#A8B2D1>Rareza: <#FFB347>{rarity}"
   lore-level: "<#6C7293>✦ <#A8B2D1>Nivel: <#E8E8FF>{current} <#6C7293>/ <#43E97B>{max}"
-  # Probabilidad de éxito (solo con success-chance activo). {chance}=efectiva,
-  # {base}=base de la rareza, {booster}=lo que aporta el potenciador.
-  lore-chance: "<#6C7293>✦ <#A8B2D1>Probabilidad: <#43E97B>{chance}%"
-  lore-chance-boosted: "<#6C7293>✦ <#A8B2D1>Probabilidad: <#43E97B>{chance}% <#6C7293>({base}% +<#C084FC>{booster}%<#6C7293>)"
-  # Aviso cuando hay un sello en la ranura pero NO aplica a este encantamiento porque
-  # está atado a otra rareza (aporta 0 y no se gasta). {rarity}=rareza del sello.
-  lore-seal-mismatch: "<#6C7293>✦ <#FF6B6B>Este sello solo afecta a <#FFB347>{rarity}"
-  # Icono de nivel BLOQUEADO por hard-gate de Magia (legendario/divino con
+  # Probabilidad de éxito del intento, con barra de progreso ({bar}). El valor ya
+  # incluye el bonus de Magia: lo que ves es EXACTAMENTE lo que se tira.
+  lore-chance: "<#A8B2D1>Éxito: {bar} <#43E97B>{chance}%"
+  # Probabilidad EXACTA de que un éxito maldiga el ítem (escala con la rareza).
+  lore-curse: "<#A8B2D1>Maldición: <#FF4D4D>☠ {chance}%"
+  # Riesgo de downgrade si el intento FALLA. {level}=nivel al que caería (romano).
+  lore-downgrade: "<#A8B2D1>Si falla: <#FF6B6B>⬇ {chance}% de bajar a {level}"
+  # Variante cuando bajar significa PERDER el encantamiento (estaba a nivel I).
+  lore-downgrade-lose: "<#A8B2D1>Si falla: <#FF6B6B>⬇ {chance}% de perderlo"
+  # Icono BLOQUEADO por hard-gate de Magia (legendario/divino con
   # success-chance.magia.gating). Sustituye al icono normal cuando el jugador no llega
   # al nivel de Magia requerido. {required}=nivel exigido, {level}=nivel actual del jugador.
   locked-name: "<#6C7293><bold>🔒 {name}</bold>"
@@ -374,17 +367,18 @@ enchant-icons:
     - "<#6C7293>Tu nivel de Magia: <#A8B2D1>{level}"
   available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}"
   available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
-  available-lore-reagent: "<#A8B2D1>Reactivo: <#43E97B>{amount}x {item}"
-  available-lore-button: "<#FFD93D>▶ <#43E97B>Clic para encantar"
+  # Botón de intento ({name} = encantamiento + nivel que se intenta).
+  available-lore-button: "<#FFD93D>▶ <#43E97B>Clic para intentar {name}"
 
   # ── Cabeza de estadísticas del jugador (panel de bonus de Magia) ──
   # Solo se muestra si Magia está activa. Reúne TODOS los bonus en un sitio en vez de
-  # repetirlos bajo cada encantamiento. Placeholders: {level} nivel de Magia, {success}
-  # +% éxito, {discount} -% coste, {refund} % reembolso, {xp} +% XP de Magia total
-  # (de cualquier fuente: armadura, boosters, etc.). El maná no se usa en la mesa.
+  # repetirlos bajo cada encantamiento. Placeholders: {bar} barra de progreso del nivel,
+  # {level}/{max} nivel de Magia y máximo, {success} +% éxito, {discount} -% coste,
+  # {refund} % reembolso, {xp} +% XP de Magia total (de cualquier fuente).
   stats-head-name: "<gradient:#C084FC:#7C3AED><bold>Mis estadísticas</bold></gradient>"
   stats-head-lore:
-    - "<#6C7293>Nivel de <#C084FC>Magia<#6C7293>: <#E8E8FF>{level}"
+    - "<#6C7293>Nivel de <#C084FC>Magia<#6C7293>:"
+    - "{bar} <#E8E8FF>{level}<#6C7293>/{max}"
     - ""
     - "<#43E97B>✔ +{success}%<#6C7293> probabilidad de éxito"
     - "<#FFD93D>✔ -{discount}%<#6C7293> coste de encantar"
@@ -399,8 +393,6 @@ enchant-icons:
   unavailable-xp-ok: "<#43E97B>✔ Fondos suficientes"
   unavailable-power-fail: "<#FF6B6B>✘ Poder requerido: {required}"
   unavailable-power-ok: "<#43E97B>✔ Poder suficiente"
-  unavailable-reagent-fail: "<#FF6B6B>✘ Reactivo: {amount}x {item}"
-  unavailable-reagent-ok: "<#43E97B>✔ Reactivo: {amount}x {item}"
   unavailable-footer: "<#FF6B6B>✘ No disponible"
 
 # ─────────────────────────────────────────────

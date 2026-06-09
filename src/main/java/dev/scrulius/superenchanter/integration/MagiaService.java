@@ -107,6 +107,17 @@ public final class MagiaService {
         return s == null ? 0 : SuperCore.ecoSkills().getSkillLevel(player, s);
     }
 
+    /**
+     * The skill's maximum level, read natively from EcoSkills ({@code Skill.getMaxLevel},
+     * i.e. the {@code max-level} of the skill's yml) — used to scale the level progress
+     * bar in the table's stats panel. 0 when inactive/unresolved (renders an empty bar).
+     */
+    public int maxLevel() {
+        if (!enabled) return 0;
+        Skill s = skill();
+        return s == null ? 0 : s.getMaxLevel();
+    }
+
     /** Carril 1 — success-chance bonus (percentage points) for this player's level. */
     public int successBonus(@NotNull Player player) {
         if (!enabled) return 0;

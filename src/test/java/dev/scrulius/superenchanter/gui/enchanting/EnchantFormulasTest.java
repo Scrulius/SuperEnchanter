@@ -61,63 +61,69 @@ class EnchantFormulasTest {
     }
 
     @Nested
-    @DisplayName("cumulativeCost")
-    class CumulativeCost {
-
-        // Steps: reaching I costs 10, II costs 20, III costs 30, IV costs 40, V costs 50.
-        private final int[] steps = {10, 20, 30, 40, 50};
+    @DisplayName("filledSegments")
+    class FilledSegments {
 
         @Test
-        @DisplayName("from scratch (level 0) to V sums every step")
-        void fromZeroToMax() {
-            // 10 + 20 + 30 + 40 + 50 = 150
-            assertEquals(150, EnchantFormulas.cumulativeCost(steps, 0, 5));
+        @DisplayName("proportional fill, rounded to the nearest segment")
+        void proportional() {
+            assertEquals(5, EnchantFormulas.filledSegments(50, 100, 10));
+            assertEquals(1, EnchantFormulas.filledSegments(5, 100, 10));   // 0.5 rounds up
+            assertEquals(8, EnchantFormulas.filledSegments(80, 100, 10));
         }
 
         @Test
-        @DisplayName("from scratch to level III sums the first three steps")
-        void fromZeroToThree() {
-            // 10 + 20 + 30 = 60
-            assertEquals(60, EnchantFormulas.cumulativeCost(steps, 0, 3));
+        @DisplayName("full and beyond-full clamp to all segments")
+        void clampedAtFull() {
+            assertEquals(10, EnchantFormulas.filledSegments(100, 100, 10));
+            assertEquals(10, EnchantFormulas.filledSegments(330, 100, 10));
         }
 
         @Test
-        @DisplayName("upgrading from an existing level only charges the remaining steps")
-        void fromExistingLevel() {
-            // already at II -> upgrade to V: 30 + 40 + 50 = 120
-            assertEquals(120, EnchantFormulas.cumulativeCost(steps, 2, 5));
+        @DisplayName("zero or negative value renders empty")
+        void emptyAtZero() {
+            assertEquals(0, EnchantFormulas.filledSegments(0, 100, 10));
+            assertEquals(0, EnchantFormulas.filledSegments(-5, 100, 10));
         }
 
         @Test
-        @DisplayName("a single step up charges exactly that step")
-        void singleStep() {
-            // already at III -> IV: just 40
-            assertEquals(40, EnchantFormulas.cumulativeCost(steps, 3, 4));
+        @DisplayName("non-positive max renders empty (unresolved Magia skill)")
+        void emptyOnBadMax() {
+            assertEquals(0, EnchantFormulas.filledSegments(25, 0, 10));
+            assertEquals(0, EnchantFormulas.filledSegments(25, -1, 10));
+        }
+    }
+
+    @Nested
+    @DisplayName("progressBar")
+    class ProgressBar {
+
+        @Test
+        @DisplayName("splits the bar into a tagged filled run and a tagged empty run")
+        void filledAndEmptyRuns() {
+            assertEquals("<#AAA>■■■■■<#BBB>■■■■■",
+                    EnchantFormulas.progressBar(50, 100, 10, "<#AAA>", "<#BBB>"));
         }
 
         @Test
-        @DisplayName("the whole path equals the sum of its single steps")
-        void pathEqualsSumOfSteps() {
-            int piecewise = EnchantFormulas.cumulativeCost(steps, 0, 1)
-                    + EnchantFormulas.cumulativeCost(steps, 1, 2)
-                    + EnchantFormulas.cumulativeCost(steps, 2, 3)
-                    + EnchantFormulas.cumulativeCost(steps, 3, 4)
-                    + EnchantFormulas.cumulativeCost(steps, 4, 5);
-            assertEquals(EnchantFormulas.cumulativeCost(steps, 0, 5), piecewise);
+        @DisplayName("a gradient filled tag is auto-closed before the empty run")
+        void gradientIsClosed() {
+            assertEquals("<gradient:#A:#B>■■■■■</gradient><#BBB>■■■■■",
+                    EnchantFormulas.progressBar(50, 100, 10, "<gradient:#A:#B>", "<#BBB>"));
         }
 
         @Test
-        @DisplayName("target at or below current level floors at 1 (nothing to charge)")
-        void noStepsFloorsAtOne() {
-            assertEquals(1, EnchantFormulas.cumulativeCost(steps, 5, 5));
-            assertEquals(1, EnchantFormulas.cumulativeCost(steps, 3, 2));
+        @DisplayName("an empty bar has no filled tag at all")
+        void emptyBar() {
+            assertEquals("<#BBB>■■■■■■■■■■",
+                    EnchantFormulas.progressBar(0, 100, 10, "<#AAA>", "<#BBB>"));
         }
 
         @Test
-        @DisplayName("target beyond the array is clamped to available steps")
-        void targetBeyondArray() {
-            // steps only define 5 levels; asking for VII sums what exists
-            assertEquals(150, EnchantFormulas.cumulativeCost(steps, 0, 7));
+        @DisplayName("a full bar has no empty tag at all")
+        void fullBar() {
+            assertEquals("<#AAA>■■■■■■■■■■",
+                    EnchantFormulas.progressBar(100, 100, 10, "<#AAA>", "<#BBB>"));
         }
     }
 

@@ -150,21 +150,28 @@ Las dos comparten layout para que se lean igual: fondo **negro** (`BLACK_STAINED
   + "espada de diamante concentrada"), que vanilla nunca permitió. Se valida en preview Y en forge (el
   botón es clicable siempre). Barrera `anvil.different-items-*` cuando no casa.
 
-### Mesa de encantamientos (EnchantingGUI) — 3 niveles
+### Mesa de encantamientos (EnchantingGUI) — 2 niveles, COMPACTA (27 slots / 3 filas)
+**Rediseño hardcore (2026-06)**: progresión **secuencial obligatoria** — el único nivel comprable es
+el SIGUIENTE (I→II→III…, sin saltos); **el icono del encantamiento ES el botón de intento** (se
+eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunque falle.
 1. **Categorías** = tipos de EcoEnchants (`EcoEnchantsHook.getTypeId`).
-2. **Encantamientos** de la categoría.
-3. **Niveles** (coste/poder/reactivo).
+2. **Encantamientos** de la categoría: el icono muestra barra de % de éxito, % exacto de maldición,
+   riesgo de downgrade, coste y poder del siguiente nivel; clic = intentar ese peldaño
+   (`EnchantingLogic.nextStep` → `NextStep{level, stepCost, requiredPower}`).
 - Botón cerrar hace de "atrás" (sube un nivel).
-- **Layout** (fondo negro `BLACK_STAINED_GLASS_PANE`, como yunque/transferencia): cabeza de stats
-  "Mis estadísticas" centrada arriba (slot 4); **cluster de inputs a la izquierda** — icono mesa (19) +
-  input objeto (20) arriba, icono sello (28) + slot sello (29) debajo (el sello sube para top-alinearse
-  con el grid); **grid de ofertas 4×2 desplazado a la derecha** (cols 4-7: slots 22-25 / 31-34;
-  `OFFER_SLOTS`, `offerIndexOf` es dinámico). Power (48), cerrar/atrás (49), guía (50), paginación (46/52).
-- **Estilo unificado de iconos** (no tocar los iconos de encantamiento): *etiquetas de slot* (mesa,
-  sello) = `gradiente+negrita+➜` apuntando a su slot; *paneles de info* (poder, stats, guía) =
-  `gradiente+negrita+glifo` (✦ / 📖); *botones* (cerrar/atrás/paginación) = `color+negrita+glifo`
-  direccional. Viñetas `✦` apagadas (`#6C7293`) para hechos sueltos, prosa en `#A8B2D1`, acción
-  `▶ Clic para…`. El `gui-title` va sin símbolos (se salía del ancho).
+- **Layout 27 slots** (fondo negro `BLACK_STAINED_GLASS_PANE`): fila 1 — stats (2), etiqueta mesa ➜
+  (3), **input (4)**, poder (6), guía (8); fila 2 — **7 slots de ofertas (10-16)**; fila 3 —
+  paginación (18/26) y cerrar/atrás (22). `AbstractCustomGUI` ganó un constructor con `size` para
+  esto (yunque/transferencia siguen en 54: dos inputs etiquetados + resultado / lista multi-select
+  no caben en 3 filas sin perder el lenguaje visual).
+- **Barras de progreso en texto** (sin resource pack, glifo `■` ×10): % de éxito (icono de
+  encantamiento, gradiente verde), nivel de Magia (cabeza de stats, `{bar} nivel/max` — el max se lee
+  NATIVO de `Skill.getMaxLevel()` vía `MagiaService.maxLevel()`), poder de librerías (icono de poder).
+  Render puro en `EnchantFormulas.progressBar/filledSegments` (testeado); los tags MiniMessage del
+  relleno/vacío son constantes (gradiente se auto-cierra).
+- **Estilo unificado de iconos**: *etiquetas de slot* = `gradiente+negrita+➜`; *paneles de info*
+  (poder, stats, guía) = `gradiente+negrita+glifo` (✦ / 📖); *botones* = `color+negrita+glifo`
+  direccional. Viñetas `✦` apagadas (`#6C7293`), prosa en `#A8B2D1`, acción `▶ Clic para intentar…`.
 - **Bloqueados se muestran con motivo**: `EnchantingLogic.analyze()` → `AnalyzedEnchant` con
   `BlockReason` (NONE/MAXED/CONFLICT/MISSING_REQUIRED/TYPE_LIMIT). Bloqueados = gris con el porqué; no
   se pueden abrir (eso también evita saltarse el chequeo de conflicto). Usa el modelo real de
@@ -201,28 +208,22 @@ Las dos comparten layout para que se lean igual: fondo **negro** (`BLACK_STAINED
   "displayed" en el slot de input es seguro (el jugador nunca ve lore horneado).
 - **Blacklist unificada** (`PluginConfig.isEnchantDisabled`): acepta key completa, ruta,
   `#curses` (vanilla + tipo curse de EcoEnchants), `#type:<id>`. NO existe `disable-curses`.
-- **Coste por rareza (acumulado)**: el coste POR PASO es
-  `paso(nivel) = min(max-xp-cost, multRareza*(base + mult*nivel^cost-exponent))` (el cap capa CADA
-  paso, no la suma). El importe que se cobra al saltar a un nivel destino es la **suma de los pasos**
-  desde el nivel actual hasta el destino (`EnchantFormulas.cumulativeCost`, testeada): ir directo a
-  V cuesta lo mismo que forjar I→II→III→IV→V a mano → la curva es un sumidero real, no un peaje del
-  último nivel. Precomputado en `getEnchantmentLevels` (array `perLevelCost`). Se cobra en la moneda
-  `enchanting.cost-type` (XP por defecto; también VAULT/PLAYER_POINTS) vía `CostService` — igual que
-  el yunque. Mensajes de coste genéricos (`{cost}`/`{balance}` ya formateados por moneda).
+- **Coste SOLO XP, por intento**: `coste(nivel) = min(max-xp-cost, multRareza*(base +
+  mult*nivel^cost-exponent))` — cada clic cobra SOLO ese peldaño (no hay coste acumulativo:
+  `cumulativeCost` fue eliminada junto con el salto de niveles). Los **reactivos materiales fueron
+  ELIMINADOS** por diseño (lapis/amatista fuera; `Reagent` ya no existe) y `rarity-cost-type` quedó
+  **vacío** (divino ya NO se cobra en PlayerPoints; su "premium" es el gate de Magia 35 + poder 260+
+  + 25% base + 8% maldición). El mecanismo `rarity-cost-type` sigue en el código por si se revierte.
 - **Poder por rareza**: `min(maxPower, floor + nivel*step)` por rareza (`enchanting.rarity-power`).
   El poder gatea la MAGNITUD, no la fracción de nivel.
-- **Reactivo material** por rareza (item+amount+CMD opcional). ⚠️ Con la tirada POR PASO el reactivo
-  se consume EN CADA peldaño, así que `reagent-scales-with-level` va en **false** (si no se
-  multiplicaría dos veces) y los importes son bajos (lapis/amatista; se quitaron netherite_scrap/
-  nether_star que a ×5 peldaños eran inviables).
 - **Overrides por encantamiento** (`enchanting.enchantment-overrides`, por key completa o ruta):
   `max-level` (capa niveles), `xp-cost` (coste fijo), `required-power` (poder fijo),
-  `cost-multiplier`. Aplicados en `getEnchantmentLevels` (Ola 3).
+  `cost-multiplier`. Aplicados en `nextStep`/`cappedMaxLevel`.
 - **Iconos/nombres de categoría configurables**: `enchanting.category-icons` (material por tipo +
   `default`); `category-names`/`rarity-names` en **messages.yml** (localización, fallback title-case).
 - **Single-level sin romano**: un encantamiento con maxLevel 1 se muestra "Vitalidad", no
-  "Vitalidad I" (`LevelEnchantmentOffer.levelSuffix()` gateado por maxLevel>1). Los iconos muestran
-  además **rareza** (`lore-rarity`) y progreso de nivel (`lore-level`).
+  "Vitalidad I". Los iconos muestran además **rareza** (`lore-rarity`) y progreso de nivel
+  (`lore-level`).
 
 ### Transferencia / extracción de encantamientos (grindstone repurposado)
 Banco dual abierto interceptando el grindstone (`BlockInteractListener` + failsafe en
@@ -429,53 +430,53 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   registered for mana"` (inofensivo, pero aborta la recarga de la config de maná). Cambios en
   `enchanting.yml`/maná exigen **reinicio completo** del server, no `/ecoskills reload`.
 
-### Encantamiento probabilístico + potenciadores (mesa) — `success-chance`
-**Activado por defecto** (`enchanting.success-chance.enabled: true`, norma plugin-privado; `false` =
-kill-switch que vuelve al 100% garantizado clásico).
-Con él, cada intento de encantar tiene una **probabilidad de éxito por rareza**; un **fallo consume
-TODO igual** (coste + reactivo) — ese es el riesgo/sumidero.
-- **Curva**: `prob = clamp(base(rareza) + %potenciador, 0..100)` (`EnchantFormulas.effectiveChance`,
-  pura/testeada). Base por rareza en `success-chance.by-rarity` (+ `default`).
-- **Sellos (potenciadores)**: items de **MythicMobs** que se meten en un **slot dedicado** en la mesa
-  (`SLOT_BOOSTER=37`, etiqueta en 36, SOLO visible si la feature está ON; es input slot → herencia
-  anti-dupe/crash gratis vía `getInputSlots()`). Modelo **por rareza** (`PluginConfig.Booster` =
-  `{rarity, percent}`): un sello se **ata a una rareza** y solo aporta su `percent` (y solo se consume)
-  cuando el encantamiento es de ESA rareza; con otra rareza da 0 y NO se gasta. `percent 100` sobre su
-  rareza = **garantía** (un "Sello Raro" hace que un encantamiento raro entre al 100%). `rarity: '*'`
-  (o `any`/`all`/omitido, o forma corta `id: 25`) = sello **universal** (cualquier rareza). Config en
-  `success-chance.boosters: { id → {rarity,percent} }`. `getBoosterPercent(mmId, enchantRarity)`
-  resuelve el aporte según la rareza del encantamiento seleccionado. Se consumen en CADA intento por
-  defecto (`boosters-consumed-on-success-only` lo cambia a solo-éxito). **Feedback de no-aplicable**:
-  si hay un sello en la ranura atado a OTRA rareza (aporta 0, no se gasta), el icono de nivel muestra
-  `enchant-icons.lore-seal-mismatch` ("Este sello solo afecta a {rareza}") en vez de no decir nada —
-  el jugador entiende por qué no sube el %. Lo calcula `EnchantingGUI.sealMismatchRarityId` (usa
-  `PluginConfig.getBooster` para leer la rareza objetivo del sello) y lo pinta `appendChanceLore`.
-- **Tirada POR PASO** (`EnchantingGUI.handleLevelClick`, rediseñado): clicar un nivel destino **sube
-  peldaño a peldaño** desde el nivel actual; cada peldaño cobra **solo su `stepCost`** + reactivo
-  (consumidos aun fallando) y tira `ThreadLocalRandom`. Un fallo **detiene el ascenso CONSERVANDO los
-  niveles ya logrados** (checkpoints) → nunca pierdes más de un peldaño, y reintentar solo paga lo que
-  falta (coste acumulativo salta lo poseído). Un **sello** (booster) cubre TODO el ascenso y se consume
-  UNA vez. `LevelEnchantmentOffer.stepCost` = coste de un peldaño (vs `cost` = acumulado mostrado).
-  Feedback: `enchant-success` (completo) / `enchant-partial` (parado a medias) / `enchant-fail` (primer
-  peldaño falla) / `cursed`. Audit `ENCHANT`/`ENCHANT-X`/`ENCHANT-CURSE` con `start->reached`.
-- **NO testeable con MockBukkit** (lee rareza vía EcoEnchants); solo la fórmula está cubierta.
+### Encantamiento probabilístico + DOWNGRADE (mesa) — `success-chance` (sin sellos)
+**Activado por defecto** (`enchanting.success-chance.enabled: true`; `false` = kill-switch que vuelve
+al 100% garantizado). Cada **intento** (clic = un peldaño) tiene una **probabilidad de éxito por
+rareza**; un **fallo consume el coste igual** — y puede además **bajar un nivel** (downgrade).
+- **Curva**: `prob = clamp(base(rareza) + bonusMagia, 0..100)` (`EnchantFormulas.effectiveChance`,
+  pura/testeada). **Los sellos de rareza fueron ELIMINADOS** (rediseño hardcore 2026-06): el récord
+  `Booster`, `getBoosterPercent/getBooster/getSuccessBoosterIds`, el slot de potenciador y
+  `success-chance.boosters` ya NO existen. El único sello superviviente es el **Sello Purificador**
+  (yunque, quitar maldiciones). Las dos mitigaciones que quedan: **nivel de Magia** (+% éxito) y la
+  **fusión en yunque de dos ítems idénticos** (ruta determinista que consume un segundo ítem entero —
+  la "garantía" cara que sustituye a los sellos).
+- **Downgrade (`success-chance.downgrade`, default ON)**: al FALLAR, tirada extra por rareza
+  (`comun 0 / raro 15 / epico 20 / legendario 25 / divino 30`) de que el encantamiento **baje un
+  nivel**; a nivel I se **pierde** (`EnchantmentHelper.removeEnchantment`). Solo aplica si había nivel
+  que perder (fallar 0→I solo quema el coste). El % y el nivel de caída se muestran en el icono
+  (`lore-downgrade`/`lore-downgrade-lose`). Feedback `enchant-downgrade`/`enchant-downgrade-lost` +
+  sonido propio (`sounds.enchant-downgrade`), audit **`ENCHANT-DOWN`**. ⚠️ **Balance acoplado**: la
+  deriva esperada por intento es `p − (1−p)·d`; con las bases antiguas (divino 10%) salía NEGATIVA →
+  por eso `by-rarity` se rebalanceó a **85/70/55/40/25**. Si tocas bases o downgrade, re-comprueba que
+  la deriva quede positiva para cada rareza (con el bonus de Magia del gate incluido).
+- **Tirada por clic** (`EnchantingGUI.handleEnchantClick`): cobra el `stepCost` (efectivo con
+  descuentos), tira `ThreadLocalRandom`; éxito → aplica nivel + tirada de maldición; fallo → tirada de
+  Reembolso Arcano (independiente) + tirada de downgrade. Maldición (en éxito) y downgrade (en fallo)
+  son **mutuamente excluyentes por construcción** — nunca se apilan castigos. Guard anti-stale: si el
+  nivel real del ítem no coincide con el del icono, re-renderiza en vez de actuar.
+- Feedback: `enchant-success` / `enchant-fail` / `enchant-fail-refund` / `enchant-downgrade(-lost)` /
+  `cursed` (ya no existe `enchant-partial`: no hay ascenso multi-peldaño). Audit
+  `ENCHANT`/`ENCHANT-X`/`ENCHANT-DOWN`/`ENCHANT-CURSE` con `start -> end`.
+- **NO testeable con MockBukkit** (lee rareza vía EcoEnchants); fórmulas y barras sí están cubiertas.
 
 ### Maldiciones: tirada al encantar + curación en yunque — `curse-chance` / `curse-removal`
 Sistema de riesgo/sumidero alrededor de las maldiciones (`type: curse`), default **ON**.
-- **Tirada (mesa), SIN prevención (decisión de diseño: Opción B)**: al encantar con **ÉXITO**,
-  `EnchantingGUI.maybeApplyCurse` tira un % bajo **por nivel ganado** (`enchanting.curse-chance.
-  base-percent`, default **0.4** → ~2% al subir un ítem a V, ya que la tirada es por peldaño;
-  override `by-rarity`, `divino: 0`) y, si sale, aplica una **maldición aleatoria** que targetee el ítem
-  (`EcoEnchantsHook.randomApplicableCurse`, excluye las ya presentes y las vetadas; cachea la lista de
-  curses). **No hay forma de prevenirla** (es un gamble inevitable) — los sellos de rareza NO inmunizan
-  y NO existe sello antimaldiciones (se descartó: prevenir mataba la emoción). **Veto por config**
+- **Tirada (mesa), SIN prevención, TRANSPARENTE y escalada por rareza**: al encantar con **ÉXITO**,
+  `EnchantingGUI.maybeApplyCurse` tira el % de la rareza (`curse-chance.by-rarity`, ascendente:
+  `comun 0.5 / raro 1.5 / epico 3 / legendario 5 / divino 8` — a mayor rareza, mayor riesgo; divino ya
+  NO está a 0 porque ya no se paga con moneda premium) y, si sale, aplica una **maldición aleatoria**
+  que targetee el ítem (`EcoEnchantsHook.randomApplicableCurse`, excluye las ya presentes y las
+  vetadas; cachea la lista de curses). El **% exacto se muestra en el icono** ANTES de clicar
+  (`enchant-icons.lore-curse`, `EnchantingLogic.formatPercent`). **No hay forma de prevenirla**
+  (es un gamble inevitable; NO existe sello antimaldiciones). **Veto por config**
   `curse-chance.excluded` (por key/path): **ambas vanilla vetadas** por defecto — `vanishing_curse` (el
   server usa keepinventory → no pierdes ítems al morir) y `binding_curse` (rompería el juego: con
   keepinventory no se suelta al morir y no podrías meterla en el yunque para purificar → armadura pegada
   para siempre). El pool de la tirada son las maldiciones custom (`enchants/maldiciones/`). La tirada va
-  **por NIVEL ganado** (con tirada por paso, subir de golpe o peldaño a peldaño exponen igual; máx UNA
-  maldición por operación). Feedback: sonido/partícula de fallo + actionbar `enchanting.cursed` (con hint
-  de cura), audit `ENCHANT-CURSE`. Solo en éxito (un fallo ya te cuesta todo).
+  **por intento exitoso** (= por nivel ganado, con la progresión secuencial). Feedback: sonido/partícula
+  de fallo + actionbar `enchanting.cursed` (con hint de cura), audit `ENCHANT-CURSE`. Solo en éxito (un
+  fallo ya te cuesta el coste y arriesga downgrade — los castigos nunca se apilan).
 - **Curación (yunque, Sello Purificador) = única salida**: `anvil.curse-removal` (default ON). Objeto
   maldito a la izq + Sello Purificador (`seal-ids`, item MythicMobs) a la der → "Forjar" quita **TODAS**
   las maldiciones y consume el sello. **GRATIS** (el coste es el propio item, que se vende caro).
@@ -492,8 +493,8 @@ Sistema de riesgo/sumidero alrededor de las maldiciones (`type: curse`), default
 `/superenchanter` (alias `/se`), Brigadier moderno (Lifecycle API), árbol en
 `SuperEnchanterCommand.build()` (el main solo lo registra). Subcomandos:
 - `reload` — recarga config+mensajes, refresca cooldown/crash-store. Permiso `superenchanter.reload`.
-- `give <id> [jugador]` — da un item de **MythicMobs** configurado (librería o potenciador);
-  sugerencias = `enchanted-bookshelves` ∪ `success-chance.boosters`. `superenchanter.admin`.
+- `give <id> [jugador]` — da un item de **MythicMobs** configurado (librería o Sello Purificador);
+  sugerencias = `enchanted-bookshelves` ∪ `anvil.curse-removal.seal-ids`. `superenchanter.admin`.
 - `book <ench> <nivel> [jugador]` — da un libro encantado. El encantamiento se teclea por **path**
   (`sharpness`): Brigadier `word()` **no acepta `:`**, así que se resuelve por ruta (prioriza
   namespace `minecraft`). `superenchanter.admin`.
@@ -509,7 +510,10 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 12`. Corre en cada reload.
+  conserva comentarios. `config-version: 13`. Corre en cada reload. ⚠️ El rediseño hardcore
+  **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`) que el auto-merge
+  NO pisa, y dejó claves muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar
+  `config.yml`** en el server (borrar y dejar que se regenere) para que aplique el rebalanceo.
 - **`general.gui-disabled-worlds`** (lista de mundos): ahí el yunque/mesa/grindstone quedan
   **vanilla** (no se interceptan). Lo respetan `BlockInteractListener` (no abre la GUI) **y**
   `VanillaBlockListener` (no cancela el inventario vanilla ni los eventos de encantar) →
@@ -611,11 +615,14 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 - **Pre-índice** de encantamientos por categoría al arrancar (solo si hay lag con muchísimos EcoEnchants).
 - **Tests** (JUnit 5 + MockBukkit `org.mockbukkit:mockbukkit-v26.1.2`; paper-api declarada como
   `testImplementation` aparte porque el `compileOnly` del main no se hereda): **cubierto** = matemática
-  pura (`AnvilFormulas`, `EnchantFormulas`+`cumulativeCost`, `Cost`/`CostType`, `BookshelfScanner.lineCells`,
-  `Booster.percentFor`, `EnchantingLogic.classifyBlock`) + MockBukkit (`AnvilLogic.calculateResult` con el
-  `AnvilEnchantGate`, `BookshelfScanner.scan`, `CostService`). ⚠️ **NO testeable con MockBukkit** todo lo
-  que llama a EcoEnchants/EcoSkills (`analyze()`, `TransferLogic.computeOffers`, Magia, maldiciones):
-  `com.willfp.*` es compileOnly → `NoClassDefFoundError` en runtime de test; haría falta un harness con
-  eco REAL (servidor, no Mock). Es el hueco grande de cobertura, sin resolver.
-- **Diseño descartado**: progresión nivel-a-nivel → en su lugar coste ACUMULATIVO (`cumulativeCost`,
-  saltar a V = suma I→V); las librerías encantadas son la progresión real (gate de poder por rareza).
+  pura (`AnvilFormulas`, `EnchantFormulas` con `filledSegments`/`progressBar`, `Cost`/`CostType`,
+  `BookshelfScanner.lineCells`, `EnchantingLogic.classifyBlock`) + MockBukkit (`AnvilLogic.calculateResult`
+  con el `AnvilEnchantGate`, `BookshelfScanner.scan`, `CostService`). ⚠️ **NO testeable con MockBukkit**
+  todo lo que llama a EcoEnchants/EcoSkills (`analyze()`, `nextStep`, `TransferLogic.computeOffers`,
+  Magia, maldiciones, downgrade end-to-end): `com.willfp.*` es compileOnly → `NoClassDefFoundError` en
+  runtime de test; haría falta un harness con eco REAL (servidor, no Mock). Es el hueco grande de
+  cobertura, sin resolver.
+- **Diseño descartado (rediseño hardcore 2026-06)**: el coste ACUMULATIVO con salto de niveles
+  (`cumulativeCost`, saltar a V = suma I→V) fue REEMPLAZADO por progresión secuencial obligatoria +
+  downgrade; los sellos de rareza/garantía y los reactivos materiales fueron eliminados. Las librerías
+  encantadas siguen siendo la progresión "de infraestructura" (gate de poder por rareza).

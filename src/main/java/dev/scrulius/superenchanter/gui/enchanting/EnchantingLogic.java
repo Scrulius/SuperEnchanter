@@ -3,12 +3,10 @@ package dev.scrulius.superenchanter.gui.enchanting;
 
 import dev.scrulius.superenchanter.config.MessagesConfig;
 import dev.scrulius.superenchanter.config.PluginConfig;
-import dev.scrulius.superenchanter.config.PluginConfig.Reagent;
 import dev.scrulius.superenchanter.economy.Cost;
 import dev.scrulius.superenchanter.integration.EcoEnchantsHook;
 import dev.scrulius.superenchanter.util.EnchantmentHelper;
 import dev.scrulius.superenchanter.util.ItemBuilder;
-import io.papermc.paper.datacomponent.DataComponentTypes;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -24,9 +22,21 @@ import java.util.Set;
 
 /**
  * Encapsulates all enchanting-table logic: compatible enchantment discovery,
- * offer computation, enchantment application, and icon rendering.
+ * next-step offer computation, enchantment application, and icon rendering.
+ * <p>
+ * The table is strictly <b>sequential</b>: the only purchasable upgrade for an
+ * enchantment is its <em>next</em> level ({@link #nextStep}), and a click on the
+ * enchantment icon attempts exactly that rung. There is no level-selection tier
+ * and no cumulative jump — the ladder is climbed (and risked) one rung at a time.
  */
 public final class EnchantingLogic {
+
+    /** Segments in every text progress bar shown in the GUI icons. */
+    public static final int BAR_SEGMENTS = 10;
+    /** MiniMessage tag for the filled run of the success-chance bar. */
+    private static final String BAR_SUCCESS_TAG = "<gradient:#43E97B:#38D9A9>";
+    /** MiniMessage tag for the empty run of every bar (dark metallic). */
+    public static final String BAR_EMPTY_TAG = "<#3A3F46>";
 
     private EnchantingLogic() {
         // Utility class
@@ -71,30 +81,22 @@ public final class EnchantingLogic {
             int count
     ) {}
 
-    public record LevelEnchantmentOffer(
-            @NotNull Enchantment enchantment,
-            @NotNull String displayName,
-            int level,
-            int maxLevel,
-            @Nullable String rarityId,
-            @NotNull Cost cost,
-            @NotNull Cost stepCost,
-            int requiredPower,
-            @Nullable Reagent reagent,
-            boolean alreadyApplied,
-            boolean hasEnoughPower
-    ) {
-        /** Roman-numeral suffix for the level, or empty for single-level enchantments. */
-        public @NotNull String levelSuffix() {
-            return maxLevel > 1 ? " " + toRoman(level) : "";
-        }
-    }
+    /**
+     * The single purchasable rung of an enchantment: its NEXT level. XP-only by
+     * design — there is no reagent and no cumulative cost; each attempt charges
+     * exactly this step.
+     *
+     * @param level         the level this rung grants (current + 1)
+     * @param stepCost      what this one attempt charges (consumed even on failure)
+     * @param requiredPower the bookshelf power this rung demands
+     */
+    public record NextStep(int level, @NotNull Cost stepCost, int requiredPower) {}
 
     /**
      * Returns every enchantment relevant to the item (correct target, not
      * blacklisted), each annotated with its category and a {@link BlockReason}. The
-     * GUI caches this per item so that navigating categories and levels never
-     * triggers another scan.
+     * GUI caches this per item so that navigating categories never triggers
+     * another scan.
      * <p>
      * The item-independent metadata (type, rarity, name, max level, required/conflict
      * sets, type limit) comes from the precomputed {@link EnchantmentIndex} built once
@@ -328,91 +330,61 @@ public final class EnchantingLogic {
         return out;
     }
 
-    @NotNull
-    public static List<LevelEnchantmentOffer> getEnchantmentLevels(
-            @NotNull ItemStack item,
-            @NotNull Enchantment enchantment,
-            int bookshelfPower,
-            @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
-        
-        PluginConfig config = plugin.getPluginConfig();
-        final PluginConfig.EnchantmentOverride override = config.getEnchantmentOverride(enchantment);
-        final int currentLevel = EnchantmentHelper.getEnchantments(item).getOrDefault(enchantment, 0);
-        final int rawMax = EnchantmentHelper.getMaxLevel(enchantment);
-        // A per-enchant override can cap the maximum offered level.
-        final int maxLevel = override.maxLevel() != null
-                ? Math.max(1, Math.min(rawMax, override.maxLevel()))
-                : rawMax;
+    /**
+     * The maximum level actually offered for an enchantment: the registry max,
+     * optionally capped (never raised) by a per-enchant override.
+     */
+    public static int cappedMaxLevel(@NotNull AnalyzedEnchant offer,
+                                     @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
+        final PluginConfig.EnchantmentOverride override =
+                plugin.getPluginConfig().getEnchantmentOverride(offer.enchantment());
+        return override.maxLevel() != null
+                ? Math.max(1, Math.min(offer.maxLevel(), override.maxLevel()))
+                : offer.maxLevel();
+    }
 
-        String displayName = plugin.getEcoHook().getDisplayName(enchantment, 0);
-        if (displayName.isEmpty()) {
-            displayName = EnchantmentHelper.prettyName(enchantment);
+    /**
+     * Computes the single purchasable rung for an enchantment: its next level, the
+     * step cost and the bookshelf power it demands. Returns {@code null} when the
+     * enchantment is already at its (override-capped) maximum.
+     * <p>
+     * Cost is per-step only — the sequential ladder means each click pays one rung;
+     * there is no cumulative jump to charge for.
+     */
+    @Nullable
+    public static NextStep nextStep(@NotNull AnalyzedEnchant offer,
+                                    @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
+        final PluginConfig config = plugin.getPluginConfig();
+        final PluginConfig.EnchantmentOverride override =
+                config.getEnchantmentOverride(offer.enchantment());
+
+        final int maxLevel = cappedMaxLevel(offer, plugin);
+        final int level = offer.currentLevel() + 1;
+        if (level > maxLevel) {
+            return null;
         }
 
-        // Rarity drives cost, required power and the reagent — magnitude, not level fraction.
-        final String rarityId = plugin.getEcoHook().getRarityId(enchantment);
-        final double rarityMultiplier = config.getRarityCostMultiplier(rarityId);
-        final PluginConfig.RarityPower rarityPower = config.getRarityPower(rarityId);
-        final Reagent baseReagent = config.getReagent(rarityId);
-
-        final double exponent = config.getCostExponent();
-        final int costCap = config.getMaxXpCost();
-        final int maxPower = config.getMaxBookshelfPower();
-        final boolean scaleReagent = config.isReagentScalingWithLevel();
-
-        final List<LevelEnchantmentOffer> offers = new ArrayList<>();
-
-        // Per-rarity currency override (e.g. divino → PlayerPoints) falls back to global.
+        // Rarity drives cost and required power — magnitude, not level fraction.
+        final String rarityId = offer.rarityId();
         final var costType = config.getEnchantingCostType(rarityId);
 
-        // Pre-compute the per-level STEP cost (flat override wins; otherwise the
-        // rarity-scaled, capped curve × the per-enchant multiplier). The offer for
-        // a target level then charges the CUMULATIVE sum from currentLevel+1 to it,
-        // so leaping to level V costs the same as forging each step by hand —
-        // making the curve a genuine sink instead of a single final-level toll.
-        final int[] perLevelCost = new int[maxLevel];
-        for (int lvl = 1; lvl <= maxLevel; lvl++) {
-            if (override.xpCost() != null) {
-                perLevelCost[lvl - 1] = Math.max(1, override.xpCost());
-            } else {
-                final int curve = EnchantFormulas.xpCostForLevel(config.getBaseXPCost(),
-                        config.getLevelXPMultiplier(), lvl, exponent, rarityMultiplier, costCap);
-                perLevelCost[lvl - 1] = Math.max(1, (int) Math.round(curve * override.costMultiplier()));
-            }
+        final int amount;
+        if (override.xpCost() != null) {
+            amount = Math.max(1, override.xpCost());
+        } else {
+            final int curve = EnchantFormulas.xpCostForLevel(config.getBaseXPCost(),
+                    config.getLevelXPMultiplier(), level, config.getCostExponent(),
+                    config.getRarityCostMultiplier(rarityId), config.getMaxXpCost());
+            amount = Math.max(1, (int) Math.round(curve * override.costMultiplier()));
         }
 
-        for (int lvl = 1; lvl <= maxLevel; lvl++) {
-            final int amount = EnchantFormulas.cumulativeCost(perLevelCost, currentLevel, lvl);
-            final Cost cost = new Cost(costType, amount);
-            // Single-level (step) cost — what one rung costs in the per-step roll.
-            final Cost stepCost = new Cost(costType, perLevelCost[lvl - 1]);
+        final PluginConfig.RarityPower rarityPower = config.getRarityPower(rarityId);
+        final int requiredPower = override.requiredPower() != null
+                ? Math.max(0, override.requiredPower())
+                : EnchantFormulas.requiredPowerForLevel(
+                        rarityPower.floor(), rarityPower.step(), level, config.getMaxBookshelfPower());
 
-            // Power: a per-enchant override wins; otherwise rarity floor + per-level step.
-            final int requiredPower = override.requiredPower() != null
-                    ? Math.max(0, override.requiredPower())
-                    : EnchantFormulas.requiredPowerForLevel(
-                            rarityPower.floor(), rarityPower.step(), lvl, maxPower);
-
-            final Reagent reagent = scaledReagent(baseReagent, lvl, scaleReagent);
-
-            final boolean alreadyApplied = lvl <= currentLevel;
-            final boolean hasEnoughPower = bookshelfPower >= requiredPower;
-
-            offers.add(new LevelEnchantmentOffer(
-                    enchantment,
-                    displayName,
-                    lvl,
-                    maxLevel,
-                    rarityId,
-                    cost,
-                    stepCost,
-                    requiredPower,
-                    reagent,
-                    alreadyApplied,
-                    hasEnoughPower
-            ));
-        }
-        return List.copyOf(offers);
+        return new NextStep(level, new Cost(costType, amount), requiredPower);
     }
 
     @NotNull
@@ -453,13 +425,28 @@ public final class EnchantingLogic {
         description.addAll(requirements);
     }
 
+    /**
+     * Renders the icon of one enchantment in the (single) enchantment tier. The icon
+     * IS the attempt button: it shows everything the click will roll — success bar,
+     * curse chance, downgrade risk, step cost and required power — and clicking it
+     * attempts exactly one rung. Variants: maxed (gold), blocked (gray + reason),
+     * Magia-locked (barrier), unaffordable (gray + checks) and available (green).
+     *
+     * @param offer the analyzed enchantment
+     * @param step  the next purchasable rung, or {@code null} when maxed by override
+     */
     @NotNull
     public static ItemStack createEnchantIcon(@NotNull AnalyzedEnchant offer,
+                                              @Nullable NextStep step,
                                               @NotNull Player player,
+                                              int bookshelfPower,
                                               @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
-        MessagesConfig msg = plugin.getMessages();
+        final MessagesConfig msg = plugin.getMessages();
+        final PluginConfig config = plugin.getPluginConfig();
+        final var magia = plugin.getMagiaService();
+
         List<String> description = new ArrayList<>(
-                plugin.getEcoHook().getDescription(offer.enchantment(), offer.currentLevel(), player));
+                plugin.getEcoHook().getDescription(offer.enchantment(), Math.max(1, offer.currentLevel()), player));
         if (description.isEmpty()) {
             final String descKey = "enchantment-descriptions." + offer.enchantment().getKey().getKey();
             if (msg.hasKey(descKey)) {
@@ -468,8 +455,8 @@ public final class EnchantingLogic {
         }
         appendRequirementLines(description, offer.enchantment(), plugin);
 
-        // ── Maxed (owned at max level) ──────────────────────────────────
-        if (offer.reason() == BlockReason.MAXED) {
+        // ── Maxed: owned at max level, or capped by a per-enchant override ──
+        if (offer.reason() == BlockReason.MAXED || (offer.isAvailable() && step == null)) {
             final String roman = offer.maxLevel() > 1 ? " " + toRoman(offer.currentLevel()) : "";
             final List<String> lore = new ArrayList<>();
             if (!description.isEmpty()) {
@@ -506,7 +493,28 @@ public final class EnchantingLogic {
                     .build();
         }
 
-        // ── Available (possibly already owned and upgradeable) ──────────
+        final String nextName = offer.displayName()
+                + (offer.maxLevel() > 1 ? " " + toRoman(step.level()) : "");
+
+        // ── Magia hard-gate (carril 5): barrier with the required level up front ──
+        if (magia != null && magia.isEnabled() && !magia.canEnchant(player, offer.rarityId())) {
+            final List<String> lockedLore = msg.formatList("enchant-icons.locked-lore",
+                    Map.of("{required}", String.valueOf(magia.requiredLevel(offer.rarityId())),
+                            "{level}", String.valueOf(magia.level(player))));
+            return new ItemBuilder(Material.BARRIER)
+                    .name(msg.format("enchant-icons.locked-name", Map.of("{name}", nextName)))
+                    .lore(lockedLore)
+                    .build();
+        }
+
+        // Discounted cost actually shown/charged for this player (permission + Magia).
+        Cost cost = plugin.getCostService().effectiveCost(player, step.stepCost());
+        if (magia != null && magia.isEnabled()) {
+            cost = magia.applyDiscount(player, cost);
+        }
+        final boolean canAfford = plugin.getCostService().canAfford(player, cost);
+        final boolean hasEnoughPower = bookshelfPower >= step.requiredPower();
+
         final List<String> lore = new ArrayList<>();
         if (!description.isEmpty()) {
             lore.addAll(description);
@@ -516,115 +524,30 @@ public final class EnchantingLogic {
         if (!rarity.isEmpty()) {
             lore.add(msg.format("enchant-icons.lore-rarity", Map.of("{rarity}", rarity)));
         }
-        // Level status — only meaningful for multi-level enchantments.
         if (offer.maxLevel() > 1) {
             lore.add(msg.format("enchant-icons.lore-level", Map.of(
                     "{current}", offer.currentLevel() > 0 ? toRoman(offer.currentLevel()) : "0",
-                    "{max}", toRoman(offer.maxLevel()))));
+                    "{max}", toRoman(cappedMaxLevel(offer, plugin)))));
         }
         lore.add("");
-        lore.add(msg.raw("enchant-icons.tier1-lore"));
+        appendRiskLore(lore, offer, player, plugin);
 
-        return new ItemBuilder(Material.ENCHANTED_BOOK)
-                .name(msg.format("enchant-icons.available-name", Map.of("{name}", offer.displayName())))
-                .lore(lore)
-                .build();
-    }
-
-    @NotNull
-    public static ItemStack createLevelOfferIcon(@NotNull LevelEnchantmentOffer offer,
-                                                 @NotNull Player player,
-                                                 int boosterPercent,
-                                                 @Nullable String sealRarityId,
-                                                 @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
-        MessagesConfig msg = plugin.getMessages();
-        // Single-level enchantments show no roman numeral ("Vitalidad", not "Vitalidad I").
-        final String levelText = offer.levelSuffix();
-        final var magia = plugin.getMagiaService();
-
-        // Hard gate (Magia carril 5): a locked rarity (legendario/divino) shows a barrier
-        // with the required level UP FRONT, instead of a clickable offer that bounces on
-        // click. Maxed items skip this (nothing left to enchant).
-        if (!offer.alreadyApplied() && magia != null && magia.isEnabled()
-                && !magia.canEnchant(player, offer.rarityId())) {
-            final List<String> lockedLore = msg.formatList("enchant-icons.locked-lore",
-                    Map.of("{required}", String.valueOf(magia.requiredLevel(offer.rarityId())),
-                            "{level}", String.valueOf(magia.level(player))));
-            return new ItemBuilder(Material.BARRIER)
-                    .name(msg.format("enchant-icons.locked-name",
-                            Map.of("{name}", offer.displayName() + levelText)))
-                    .lore(lockedLore)
-                    .build();
-        }
-
-        // Discounted cost actually shown/charged for this player (permission + Carril 2 Magia).
-        Cost cost = plugin.getCostService().effectiveCost(player, offer.cost());
-        if (magia != null && magia.isEnabled()) cost = magia.applyDiscount(player, cost);
-        final boolean canAfford = plugin.getCostService().canAfford(player, cost);
-        final boolean hasReagent = hasReagent(player, offer.reagent());
-
-        List<String> description = new ArrayList<>(
-                plugin.getEcoHook().getDescription(offer.enchantment(), offer.level(), player));
-        if (description.isEmpty()) {
-            final String descKey = "enchantment-descriptions." + offer.enchantment().getKey().getKey();
-            if (msg.hasKey(descKey)) {
-                description.addAll(msg.rawList(descKey));
-            }
-        }
-        appendRequirementLines(description, offer.enchantment(), plugin);
-
-        if (offer.alreadyApplied()) {
-            final List<String> lore = new ArrayList<>();
-            if (!description.isEmpty()) {
-                lore.addAll(description);
-                lore.add("");
-            }
-            lore.addAll(msg.rawList("enchant-icons.already-applied-lore"));
-            return new ItemBuilder(Material.ENCHANTED_BOOK)
-                    .name(msg.format("enchant-icons.maxed-name",
-                            Map.of("{name}", offer.displayName() + levelText)))
-                    .lore(lore)
-                    .glow()
-                    .build();
-        }
-
-        if (canAfford && offer.hasEnoughPower() && hasReagent) {
-            final List<String> lore = new ArrayList<>();
-            if (!description.isEmpty()) {
-                lore.addAll(description);
-                lore.add("");
-            }
-            final String rarity = rarityDisplayName(plugin, offer.rarityId());
-            if (!rarity.isEmpty()) {
-                lore.add(msg.format("enchant-icons.lore-rarity", Map.of("{rarity}", rarity)));
-                lore.add("");
-            }
-            appendChanceLore(lore, offer, boosterPercent, sealRarityId, player, plugin);
+        if (canAfford && hasEnoughPower) {
             lore.add(msg.format("enchant-icons.available-lore-cost",
                     Map.of("{cost}", cost.displayText())));
             lore.add(msg.format("enchant-icons.available-lore-power",
-                    Map.of("{power}", String.valueOf(offer.requiredPower()))));
-            if (requiresReagent(offer.reagent())) {
-                lore.add(msg.format("enchant-icons.available-lore-reagent", reagentPlaceholders(offer.reagent())));
-            }
-            // Magia bonuses are no longer listed per-icon (cost/chance already show them applied);
-            // the full breakdown lives in the player stats head (see EnchantingGUI#buildStatsHead).
+                    Map.of("{power}", String.valueOf(step.requiredPower()))));
             lore.add("");
-            lore.add(msg.raw("enchant-icons.available-lore-button"));
+            lore.add(msg.format("enchant-icons.available-lore-button", Map.of("{name}", nextName)));
 
             return new ItemBuilder(Material.ENCHANTED_BOOK)
-                    .name(msg.format("enchant-icons.available-name",
-                            Map.of("{name}", offer.displayName() + levelText)))
+                    .name(msg.format("enchant-icons.available-name", Map.of("{name}", nextName)))
                     .lore(lore)
                     .glow()
                     .build();
         }
 
-        final List<String> lore = new ArrayList<>();
-        if (!description.isEmpty()) {
-            lore.addAll(description);
-            lore.add("");
-        }
+        // ── Unaffordable / underpowered: gray icon with explicit ✔/✘ checks ──
         if (!canAfford) {
             lore.add(msg.format("enchant-icons.unavailable-xp-fail",
                     Map.of("{cost}", cost.displayText())));
@@ -633,170 +556,81 @@ public final class EnchantingLogic {
         } else {
             lore.add(msg.raw("enchant-icons.unavailable-xp-ok"));
         }
-
-        if (!offer.hasEnoughPower()) {
+        if (!hasEnoughPower) {
             lore.add(msg.format("enchant-icons.unavailable-power-fail",
-                    Map.of("{required}", String.valueOf(offer.requiredPower()))));
+                    Map.of("{required}", String.valueOf(step.requiredPower()))));
         } else {
             lore.add(msg.raw("enchant-icons.unavailable-power-ok"));
         }
-
-        if (requiresReagent(offer.reagent())) {
-            final String key = hasReagent ? "enchant-icons.unavailable-reagent-ok"
-                    : "enchant-icons.unavailable-reagent-fail";
-            lore.add(msg.format(key, reagentPlaceholders(offer.reagent())));
-        }
-
-        appendChanceLore(lore, offer, boosterPercent, sealRarityId, player, plugin);
         lore.add("");
         lore.add(msg.raw("enchant-icons.unavailable-footer"));
 
         return new ItemBuilder(Material.GRAY_DYE)
-                .name(msg.format("enchant-icons.unavailable-name",
-                        Map.of("{name}", offer.displayName() + levelText)))
+                .name(msg.format("enchant-icons.unavailable-name", Map.of("{name}", nextName)))
                 .lore(lore)
                 .build();
+    }
+
+    /**
+     * Appends the transparent-risk block of an attempt: the success-chance bar
+     * (base + Magia bonus — the value MUST match the roll in the GUI), the exact
+     * curse probability and, when there is a level to lose, the downgrade risk.
+     */
+    private static void appendRiskLore(@NotNull List<String> lore,
+                                       @NotNull AnalyzedEnchant offer,
+                                       @NotNull Player player,
+                                       @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
+        final PluginConfig config = plugin.getPluginConfig();
+        final MessagesConfig msg = plugin.getMessages();
+        final var magia = plugin.getMagiaService();
+
+        if (config.isSuccessChanceEnabled()) {
+            final int magiaBonus = (magia != null && magia.isEnabled()) ? magia.successBonus(player) : 0;
+            final int effective = EnchantFormulas.effectiveChance(
+                    config.getBaseSuccessChance(offer.rarityId()), magiaBonus);
+            lore.add(msg.format("enchant-icons.lore-chance", Map.of(
+                    "{bar}", EnchantFormulas.progressBar(effective, 100, BAR_SEGMENTS,
+                            BAR_SUCCESS_TAG, BAR_EMPTY_TAG),
+                    "{chance}", String.valueOf(effective))));
+        }
+
+        if (config.isCurseChanceEnabled()) {
+            final double curse = config.getCurseChance(offer.rarityId());
+            if (curse > 0) {
+                lore.add(msg.format("enchant-icons.lore-curse",
+                        Map.of("{chance}", formatPercent(curse))));
+            }
+        }
+
+        if (config.isSuccessChanceEnabled() && config.isDowngradeEnabled()
+                && offer.currentLevel() >= 1) {
+            final int downgrade = config.getDowngradeChance(offer.rarityId());
+            if (downgrade > 0) {
+                final int fallback = offer.currentLevel() - 1;
+                if (fallback <= 0) {
+                    lore.add(msg.format("enchant-icons.lore-downgrade-lose",
+                            Map.of("{chance}", String.valueOf(downgrade))));
+                } else {
+                    lore.add(msg.format("enchant-icons.lore-downgrade", Map.of(
+                            "{chance}", String.valueOf(downgrade),
+                            "{level}", toRoman(fallback))));
+                }
+            }
+        }
+    }
+
+    /** Formats a percent that may carry decimals: {@code 3.0 → "3"}, {@code 0.5 → "0.5"}. */
+    @NotNull
+    public static String formatPercent(double value) {
+        if (value == Math.floor(value)) {
+            return String.valueOf((long) value);
+        }
+        return String.valueOf(Math.round(value * 10.0) / 10.0);
     }
 
     @NotNull
     public static String toRoman(int number) {
         return EnchantFormulas.toRoman(number);
-    }
-
-    /**
-     * Appends the success-chance lore line to a level-offer icon when probabilistic
-     * enchanting is enabled. Shows the effective chance, and when a potentiator is
-     * applied also breaks down the base + booster contribution.
-     */
-    private static void appendChanceLore(@NotNull List<String> lore,
-                                         @NotNull LevelEnchantmentOffer offer,
-                                         int boosterPercent,
-                                         @Nullable String sealRarityId,
-                                         @NotNull Player player,
-                                         @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
-        final PluginConfig config = plugin.getPluginConfig();
-        if (!config.isSuccessChanceEnabled()) {
-            return;
-        }
-        final MessagesConfig msg = plugin.getMessages();
-        final var magia = plugin.getMagiaService();
-        final int magiaBonus = (magia != null && magia.isEnabled()) ? magia.successBonus(player) : 0;
-        final int base = config.getBaseSuccessChance(offer.rarityId());
-        // The shown chance MUST match the roll in handleLevelClick (base + booster + Magia).
-        final int effective = EnchantFormulas.effectiveChance(base, boosterPercent + magiaBonus);
-        if (boosterPercent > 0) {
-            lore.add(msg.format("enchant-icons.lore-chance-boosted", Map.of(
-                    "{chance}", String.valueOf(effective),
-                    "{base}", String.valueOf(base),
-                    "{booster}", String.valueOf(boosterPercent))));
-        } else {
-            lore.add(msg.format("enchant-icons.lore-chance",
-                    Map.of("{chance}", String.valueOf(effective))));
-            // A seal sitting in the slot that targets a *different* rarity contributes 0
-            // and isn't consumed. Without this line the player just sees no boost and
-            // assumes the seal is broken — tell them which rarity it actually serves.
-            if (sealRarityId != null) {
-                lore.add(msg.format("enchant-icons.lore-seal-mismatch",
-                        Map.of("{rarity}", rarityDisplayName(plugin, sealRarityId))));
-            }
-        }
-    }
-
-    // ── Reagent handling ────────────────────────────────────────────────────
-
-    /** @return {@code true} if the reagent is non-null and actually requires items */
-    public static boolean requiresReagent(@Nullable Reagent reagent) {
-        return reagent != null && !reagent.isEmpty();
-    }
-
-    /**
-     * Returns the reagent scaled for a given level. When scaling is enabled the
-     * required amount is multiplied by the level (level V costs 5× a level I).
-     */
-    @Nullable
-    private static Reagent scaledReagent(@Nullable Reagent base, int level, boolean scale) {
-        if (base == null || base.isEmpty() || !scale || level <= 1) {
-            return base;
-        }
-        return new Reagent(base.material(), base.amount() * level, base.customModelData());
-    }
-
-    /** @return {@code true} if the player carries enough of the reagent (or none is required) */
-    public static boolean hasReagent(@NotNull Player player, @Nullable Reagent reagent) {
-        if (!requiresReagent(reagent)) {
-            return true;
-        }
-        return countReagent(player, reagent) >= reagent.amount();
-    }
-
-    /**
-     * Consumes the reagent from the player's inventory. Returns {@code false}
-     * (and consumes nothing) if the player does not carry enough.
-     *
-     * @param player  the player to charge
-     * @param reagent the reagent to consume (may be {@code null}/empty → no-op success)
-     * @return whether the reagent was successfully consumed
-     */
-    public static boolean consumeReagent(@NotNull Player player, @Nullable Reagent reagent) {
-        if (!requiresReagent(reagent)) {
-            return true;
-        }
-        if (countReagent(player, reagent) < reagent.amount()) {
-            return false;
-        }
-        int remaining = reagent.amount();
-        final ItemStack[] contents = player.getInventory().getStorageContents();
-        for (int i = 0; i < contents.length && remaining > 0; i++) {
-            final ItemStack stack = contents[i];
-            if (!matchesReagent(stack, reagent)) {
-                continue;
-            }
-            final int take = Math.min(stack.getAmount(), remaining);
-            stack.setAmount(stack.getAmount() - take);
-            remaining -= take;
-            if (stack.getAmount() <= 0) {
-                contents[i] = null;
-            }
-        }
-        player.getInventory().setStorageContents(contents);
-        return true;
-    }
-
-    private static int countReagent(@NotNull Player player, @NotNull Reagent reagent) {
-        int total = 0;
-        for (ItemStack stack : player.getInventory().getStorageContents()) {
-            if (matchesReagent(stack, reagent)) {
-                total += stack.getAmount();
-            }
-        }
-        return total;
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static boolean matchesReagent(@Nullable ItemStack stack, @NotNull Reagent reagent) {
-        if (stack == null || stack.getType() != reagent.material()) {
-            return false;
-        }
-        if (reagent.customModelData() == null) {
-            return true;
-        }
-        var cmd = stack.getData(DataComponentTypes.CUSTOM_MODEL_DATA);
-        return cmd != null && cmd.floats().contains((float) reagent.customModelData());
-    }
-
-    @NotNull
-    public static Map<String, String> reagentPlaceholders(@Nullable Reagent reagent) {
-        if (reagent == null) {
-            return Map.of("{amount}", "0", "{item}", "");
-        }
-        return Map.of(
-                "{amount}", String.valueOf(reagent.amount()),
-                "{item}", prettyMaterial(reagent.material()));
-    }
-
-    @NotNull
-    private static String prettyMaterial(@NotNull Material material) {
-        return prettyId(material.name());
     }
 
     /**

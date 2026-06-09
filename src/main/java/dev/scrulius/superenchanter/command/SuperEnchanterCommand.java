@@ -66,7 +66,6 @@ public final class SuperEnchanterCommand {
                                     final String rem = b.getRemaining().toLowerCase(Locale.ROOT);
                                     final TreeSet<String> ids = new TreeSet<>();
                                     ids.addAll(plugin.getPluginConfig().getEnchantedBookshelfIds());
-                                    ids.addAll(plugin.getPluginConfig().getSuccessBoosterIds());
                                     ids.addAll(plugin.getPluginConfig().getCurseRemovalSealIds());
                                     ids.stream().filter(s -> s.startsWith(rem)).forEach(b::suggest);
                                     return b.buildFuture();

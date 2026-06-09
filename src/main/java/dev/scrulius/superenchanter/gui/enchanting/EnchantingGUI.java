@@ -3,10 +3,11 @@ package dev.scrulius.superenchanter.gui.enchanting;
 
 import dev.scrulius.superenchanter.SuperEnchanterPlugin;
 import dev.scrulius.superenchanter.config.PluginConfig;
+import dev.scrulius.superenchanter.economy.Cost;
 import dev.scrulius.superenchanter.gui.AbstractCustomGUI;
 import dev.scrulius.superenchanter.gui.enchanting.EnchantingLogic.AnalyzedEnchant;
 import dev.scrulius.superenchanter.gui.enchanting.EnchantingLogic.CategoryOffer;
-import dev.scrulius.superenchanter.gui.enchanting.EnchantingLogic.LevelEnchantmentOffer;
+import dev.scrulius.superenchanter.gui.enchanting.EnchantingLogic.NextStep;
 import dev.scrulius.superenchanter.util.EnchantmentHelper;
 import dev.scrulius.superenchanter.util.ItemBuilder;
 import org.bukkit.Bukkit;
@@ -22,41 +23,43 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A 54-slot custom enchanting GUI with a 3-tier flow:
+ * A compact 27-slot (3-row) custom enchanting GUI with a 2-tier flow:
  * <ol>
  *   <li><b>Categories</b> — the EcoEnchants types applicable to the input item.</li>
- *   <li><b>Enchantments</b> — the enchantments within the chosen category.</li>
- *   <li><b>Levels</b> — the levels of the chosen enchantment, with cost/power/reagent.</li>
+ *   <li><b>Enchantments</b> — each icon shows the NEXT level, its exact success
+ *       chance (progress bar), curse probability and downgrade risk; clicking it
+ *       attempts that single rung.</li>
  * </ol>
- * The close button doubles as a "back" button, walking one tier up at a time.
+ * Progression is strictly sequential (I → II → ... — no level jumping), the only
+ * resource consumed is XP, and a failed attempt may additionally downgrade the
+ * enchantment one level (the hardcore penalty). The close button doubles as a
+ * "back" button at tier 2.
  */
 public final class EnchantingGUI extends AbstractCustomGUI {
 
-    // ── Slot constants ──────────────────────────────────────────────────────
-    /** Player-head panel with the viewer's Magia bonuses (top-centre; only when Magia is active). */
-    private static final int SLOT_STATS = 4;
-    /** Item-to-enchant input (col 2); the table icon sits to its left. */
-    private static final int SLOT_INPUT = 20;
-    /** Enchanting-table icon, to the LEFT of the input. */
-    private static final int SLOT_TABLE_DECO = 19;
-    /** Decorative label/icon for the seal, to the LEFT of the seal slot (only with chance on). */
-    private static final int SLOT_BOOSTER_LABEL = 28;
-    /** Seal/potentiator input (col 2, row below the input — top-aligned with the offer grid). */
-    private static final int SLOT_BOOSTER = 29;
-    private static final int SLOT_POWER = 48;
-    private static final int SLOT_CLOSE = 49; // also acts as back button
-    private static final int SLOT_GUIDE = 50;
-    private static final int SLOT_PREV_PAGE = 46;
-    private static final int SLOT_NEXT_PAGE = 52;
+    // ── Slot constants (3 rows, 0-26) ───────────────────────────────────────
+    /** Player-head panel with the viewer's Magia bonuses (only when Magia is active). */
+    private static final int SLOT_STATS = 2;
+    /** Enchanting-table label, pointing ➜ at the input to its right. */
+    private static final int SLOT_TABLE_DECO = 3;
+    /** Item-to-enchant input (top centre). */
+    private static final int SLOT_INPUT = 4;
+    private static final int SLOT_POWER = 6;
+    private static final int SLOT_GUIDE = 8;
+    private static final int SLOT_PREV_PAGE = 18;
+    private static final int SLOT_CLOSE = 22; // also acts as back button
+    private static final int SLOT_NEXT_PAGE = 26;
 
-    /** Ordered list of slots used to display offers (2 rows of 4, shifted right). */
-    private static final List<Integer> OFFER_SLOTS = List.of(
-            22, 23, 24, 25,   // row 2
-            31, 32, 33, 34    // row 3
-    );
+    /** Ordered list of slots used to display offers (middle row). */
+    private static final List<Integer> OFFER_SLOTS = List.of(10, 11, 12, 13, 14, 15, 16);
     private static final Set<Integer> OFFER_SLOTS_SET = Set.copyOf(OFFER_SLOTS);
+
+    /** MiniMessage tags for the Magia-level and bookshelf-power progress bars. */
+    private static final String BAR_MAGIA_TAG = "<gradient:#C084FC:#7C3AED>";
+    private static final String BAR_POWER_TAG = "<gradient:#64DFDF:#38D9A9>";
 
     /** Decorative panes are read-only, so build them once and reuse the references. */
     private static final ItemStack FILLER_PANE = new ItemBuilder(Material.BLACK_STAINED_GLASS_PANE)
@@ -66,8 +69,6 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
     // ── State ───────────────────────────────────────────────────────────────
     private final Block tableBlock;
-    /** Whether probabilistic enchanting (and thus the potentiator slot) is active. */
-    private final boolean boosterEnabled;
     /** Offers shown per page, clamped to the number of available offer slots. */
     private final int pageSize;
     /** Power breakdown computed when the menu opened (blocks don't change mid-session). */
@@ -75,9 +76,8 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     private final int bookshelfPower;
     private int currentPage;
 
-    /** Navigation state: category null = tier 0; enchantment null = tier 1; else tier 2. */
+    /** Navigation state: category null = tier 1 (categories); else tier 2 (enchantments). */
     private String selectedCategory = null;
-    private Enchantment selectedEnchantment = null;
 
     /** Cached one-shot analysis of the current input item (see EnchantingLogic#analyze). */
     private List<AnalyzedEnchant> analysis = new ArrayList<>();
@@ -85,15 +85,13 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
     private List<CategoryOffer> categoryOffers = new ArrayList<>();
     private List<AnalyzedEnchant> enchantOffers = new ArrayList<>();
-    private List<LevelEnchantmentOffer> levelOffers = new ArrayList<>();
 
     // ── Constructor ───────────────────────────────────────────────────────
     public EnchantingGUI(@NotNull SuperEnchanterPlugin plugin,
                          @NotNull Player player,
                          @NotNull Block tableBlock) {
-        super(plugin, player, plugin.getMessages().parsed("enchanting.gui-title"));
+        super(plugin, player, plugin.getMessages().parsed("enchanting.gui-title"), 27);
         this.tableBlock = tableBlock;
-        this.boosterEnabled = plugin.getPluginConfig().isSuccessChanceEnabled();
         this.pageSize = Math.max(1,
                 Math.min(plugin.getPluginConfig().getEnchantsPerPage(), OFFER_SLOTS.size()));
         this.powerScan = BookshelfScanner.scan(tableBlock, plugin);
@@ -106,8 +104,7 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
     @Override
     protected @NotNull Set<Integer> getInputSlots() {
-        // The potentiator slot only accepts items when probabilistic enchanting is on.
-        return boosterEnabled ? Set.of(SLOT_INPUT, SLOT_BOOSTER) : Set.of(SLOT_INPUT);
+        return Set.of(SLOT_INPUT);
     }
 
     @Override
@@ -123,15 +120,6 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                 .lore(msg.rawList("enchanting.table-deco-lore"))
                 .build());
 
-        if (boosterEnabled) {
-            // Label points right at the (empty) potentiator input slot.
-            inventory.setItem(SLOT_BOOSTER_LABEL, new ItemBuilder(Material.AMETHYST_SHARD)
-                    .name(msg.raw("enchanting.booster-label-name"))
-                    .lore(msg.rawList("enchanting.booster-label-lore"))
-                    .build());
-            inventory.setItem(SLOT_BOOSTER, new ItemStack(Material.AIR));
-        }
-
         inventory.setItem(SLOT_POWER, buildPowerIcon());
         renderCloseOrBackButton();
 
@@ -146,9 +134,9 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
     /**
      * Renders (or refreshes) the player-head stats panel summarising every Magia bonus —
-     * level, success/discount/refund, mana and the armor XP boost — in one place, so the
-     * offer icons stay clean (costs/chances already show the bonuses applied). Only shown
-     * when Magia is active; otherwise the slot stays decorative.
+     * a level progress bar, success/discount/refund and the armor XP boost — in one
+     * place, so the offer icons stay clean (costs/chances already show the bonuses
+     * applied). Only shown when Magia is active; otherwise the slot stays decorative.
      */
     private void refreshStatsHead() {
         final var magia = plugin.getMagiaService();
@@ -156,8 +144,13 @@ public final class EnchantingGUI extends AbstractCustomGUI {
             inventory.setItem(SLOT_STATS, FILLER_PANE);
             return;
         }
+        final int level = magia.level(player);
+        final int maxLevel = magia.maxLevel();
         final List<String> lore = msg.formatList("enchant-icons.stats-head-lore", Map.of(
-                "{level}", String.valueOf(magia.level(player)),
+                "{bar}", EnchantFormulas.progressBar(level, maxLevel,
+                        EnchantingLogic.BAR_SEGMENTS, BAR_MAGIA_TAG, EnchantingLogic.BAR_EMPTY_TAG),
+                "{level}", String.valueOf(level),
+                "{max}", String.valueOf(maxLevel),
                 "{success}", String.valueOf(magia.successBonus(player)),
                 "{discount}", String.valueOf(magia.discountPercent(player)),
                 "{refund}", String.valueOf(magia.refundChance(player)),
@@ -175,12 +168,10 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
         if (inputItem == null || inputItem.getType() == Material.AIR) {
             selectedCategory = null;
-            selectedEnchantment = null;
             analysis = new ArrayList<>();
             analyzedItem = null;
             categoryOffers = new ArrayList<>();
             enchantOffers = new ArrayList<>();
-            levelOffers = new ArrayList<>();
             currentPage = 0;
             clearOfferSlots();
             renderCloseOrBackButton();
@@ -193,20 +184,13 @@ public final class EnchantingGUI extends AbstractCustomGUI {
             analysis = EnchantingLogic.analyze(inputItem, plugin);
             analyzedItem = inputItem.clone();
             // Drop any selection that is no longer valid for the new item.
-            if (selectedEnchantment != null
-                    && analysis.stream().noneMatch(a -> a.enchantment().equals(selectedEnchantment))) {
-                selectedEnchantment = null;
-            }
             if (selectedCategory != null
                     && analysis.stream().noneMatch(a -> a.typeId().equalsIgnoreCase(selectedCategory))) {
                 selectedCategory = null;
             }
         }
 
-        if (selectedEnchantment != null) {
-            levelOffers = new ArrayList<>(EnchantingLogic.getEnchantmentLevels(
-                    inputItem, selectedEnchantment, bookshelfPower, plugin));
-        } else if (selectedCategory != null) {
+        if (selectedCategory != null) {
             enchantOffers = EnchantingLogic.enchantsInCategory(analysis, selectedCategory);
         } else {
             categoryOffers = EnchantingLogic.getCategories(analysis);
@@ -220,15 +204,9 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     @Override
     protected void onSlotClick(@NotNull Player player, int slot,
                                @NotNull InventoryClickEvent event) {
-        final PluginConfig config = plugin.getPluginConfig();
-
         // ── Close / Back button ────────────────────────────────────────
         if (slot == SLOT_CLOSE) {
-            if (selectedEnchantment != null) {
-                selectedEnchantment = null;
-                plugin.getPluginConfig().getButtonClickSound().play(player);
-                updatePreview();
-            } else if (selectedCategory != null) {
+            if (selectedCategory != null) {
                 selectedCategory = null;
                 plugin.getPluginConfig().getButtonClickSound().play(player);
                 updatePreview();
@@ -256,9 +234,7 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
         // ── Offer click — depends on the current tier ───────────────────
         if (OFFER_SLOTS_SET.contains(slot)) {
-            if (selectedEnchantment != null) {
-                handleLevelClick(player, slot, config);
-            } else if (selectedCategory != null) {
+            if (selectedCategory != null) {
                 handleEnchantClick(player, slot);
             } else {
                 handleCategoryClick(player, slot);
@@ -286,342 +262,230 @@ public final class EnchantingGUI extends AbstractCustomGUI {
         updatePreview();
     }
 
+    /**
+     * Attempts ONE rung of the clicked enchantment — the icon already showed the
+     * exact chance, cost, curse % and downgrade risk for this attempt. Sequential
+     * by design: the only purchasable level is the next one.
+     * <p>
+     * Outcome tree: the cost is charged up front (consumed even on failure). A
+     * successful roll applies the level and then rolls the curse chance. A failed
+     * roll rolls Reembolso Arcano (Magia refund) AND, when there was a level to
+     * lose, the downgrade penalty (one level down; level I drops to nothing).
+     */
     private void handleEnchantClick(@NotNull Player player, int slot) {
+        final PluginConfig config = plugin.getPluginConfig();
         final int index = offerIndexOf(slot);
         if (index < 0 || index >= enchantOffers.size()) {
             return;
         }
         final AnalyzedEnchant offer = enchantOffers.get(index);
-        // Blocked enchantments (conflict / missing requirement / maxed / type limit)
-        // cannot be opened — the icon already shows why.
         if (!offer.isAvailable()) {
-            plugin.getPluginConfig().getErrorSound().play(player);
-            player.sendActionBar(msg.parsed("enchanting.enchant-blocked"));
-            return;
-        }
-        selectedEnchantment = offer.enchantment();
-        plugin.getPluginConfig().getButtonClickSound().play(player);
-        updatePreview();
-    }
-
-    /**
-     * Per-step ("ladder") enchant: clicking a target level climbs ONE level at a time
-     * from the item's current level, rolling success-chance on each rung. Each rung
-     * charges only its own step cost + reagent (consumed even on a failed roll). On a
-     * failed rung the climb stops, KEEPING every level already gained — so you can never
-     * lose more than one rung, and retrying only pays the levels you still lack
-     * (cumulative cost skips owned levels). A success booster, if present, covers the
-     * whole climb and is consumed once.
-     */
-    private void handleLevelClick(@NotNull Player player, int slot, @NotNull PluginConfig config) {
-        final int index = offerIndexOf(slot);
-        if (index < 0 || index >= levelOffers.size()) {
-            return;
-        }
-        final LevelEnchantmentOffer targetOffer = levelOffers.get(index);
-        if (targetOffer.alreadyApplied()) {
             config.getErrorSound().play(player);
-            return;
-        }
-        if (isOnCooldown()) {
-            player.sendActionBar(msg.parsed("enchanting.cooldown-actionbar"));
+            player.sendActionBar(msg.parsed("enchanting.enchant-blocked"));
             return;
         }
         ItemStack working = inventory.getItem(SLOT_INPUT);
         if (working == null || working.getType() == Material.AIR) {
             return;
         }
+        // Stale-click guard: the icon was rendered for offer.currentLevel(); if the
+        // item changed under us, re-render instead of acting on outdated numbers.
+        final Enchantment enchantment = offer.enchantment();
+        final int currentLevel = EnchantmentHelper.getEnchantments(working)
+                .getOrDefault(enchantment, 0);
+        if (currentLevel != offer.currentLevel()) {
+            updatePreview();
+            return;
+        }
 
-        final Enchantment enchantment = targetOffer.enchantment();
-        final int targetLevel = targetOffer.level();
-        final int startLevel = EnchantmentHelper.getEnchantments(working).getOrDefault(enchantment, 0);
-        if (targetLevel <= startLevel) {
+        final NextStep step = EnchantingLogic.nextStep(offer, plugin);
+        if (step == null) {
             config.getErrorSound().play(player);
+            player.sendActionBar(msg.parsed("enchanting.maxed-actionbar"));
+            return;
+        }
+        if (isOnCooldown()) {
+            player.sendActionBar(msg.parsed("enchanting.cooldown-actionbar"));
             return;
         }
 
         // ── Magia (skill loop) — gating + success bonus + XP grant ──
         final var magia = plugin.getMagiaService();
         final boolean magiaOn = magia != null && magia.isEnabled();
-        if (magiaOn && !magia.canEnchant(player, targetOffer.rarityId())) {
+        if (magiaOn && !magia.canEnchant(player, offer.rarityId())) {
             config.getErrorSound().play(player);
             player.sendActionBar(msg.parsed("enchanting.magia-locked",
-                    Map.of("{level}", String.valueOf(magia.requiredLevel(targetOffer.rarityId())))));
+                    Map.of("{level}", String.valueOf(magia.requiredLevel(offer.rarityId())))));
             return;
         }
 
-        final org.bukkit.Location effectLoc = tableBlock.getLocation().add(0.5, 1.5, 0.5);
-        final int boosterPercent = currentBoosterPercent(targetOffer.rarityId());
+        // ── Resource checks: bookshelf power, then the XP cost ──
+        if (bookshelfPower < step.requiredPower()) {
+            config.getErrorSound().play(player);
+            player.sendActionBar(msg.parsed("enchanting.not-enough-power",
+                    Map.of("{required}", String.valueOf(step.requiredPower()),
+                            "{current}", String.valueOf(bookshelfPower))));
+            return;
+        }
+        Cost cost = plugin.getCostService().effectiveCost(player, step.stepCost());
+        if (magiaOn) {
+            cost = magia.applyDiscount(player, cost);
+        }
+        if (!plugin.getCostService().canAfford(player, cost)
+                || !plugin.getCostService().deduct(player, cost)) {
+            config.getErrorSound().play(player);
+            player.sendActionBar(msg.parsed("enchanting.not-enough-xp",
+                    Map.of("{cost}", cost.displayText(),
+                            "{balance}", plugin.getCostService().balanceText(player, cost.type()))));
+            return;
+        }
+        applyCooldown();
+
+        // ── The roll ──
         final int magiaBonus = magiaOn ? magia.successBonus(player) : 0;
         final int effChance = EnchantFormulas.effectiveChance(
-                config.getBaseSuccessChance(targetOffer.rarityId()), boosterPercent + magiaBonus);
-        final var costType = targetOffer.cost().type();
+                config.getBaseSuccessChance(offer.rarityId()), magiaBonus);
+        final boolean ok = !config.isSuccessChanceEnabled()
+                || ThreadLocalRandom.current().nextInt(100) < effChance;
 
-        int reachedLevel = startLevel;
-        int levelsGained = 0;
-        int totalCharged = 0;
-        boolean rollFailed = false;
-        boolean charged = false;
-        String resourceStop = null;            // "cost" / "power" / "reagent" when a rung blocks
-        LevelEnchantmentOffer blockingStep = null;
-        Enchantment appliedCurse = null;       // curse rolled per gained level (at most one)
-        boolean refunded = false;              // Reembolso Arcano refunded the failed rung's cost
-        dev.scrulius.superenchanter.economy.Cost refundedCost = null;
+        Enchantment appliedCurse = null;
+        boolean refunded = false;
+        boolean downgraded = false;
+        int newLevel = currentLevel;
+        int charged = cost.intAmount();
 
-        for (int lvl = startLevel + 1; lvl <= targetLevel; lvl++) {
-            final LevelEnchantmentOffer step = levelOffers.get(lvl - 1); // offer for level lvl
-            if (bookshelfPower < step.requiredPower()) {
-                resourceStop = "power"; blockingStep = step; break;
+        if (ok) {
+            working = EnchantingLogic.applyEnchantment(working, enchantment, step.level());
+            newLevel = step.level();
+            appliedCurse = maybeApplyCurse(working, offer.rarityId());
+            if (appliedCurse != null) {
+                working = EnchantingLogic.applyEnchantment(working, appliedCurse, 1);
             }
-            var stepCost = plugin.getCostService().effectiveCost(player, step.stepCost());
-            if (magiaOn) stepCost = magia.applyDiscount(player, stepCost); // Carril 2
-            if (!plugin.getCostService().canAfford(player, stepCost)) {
-                resourceStop = "cost"; blockingStep = step; break;
+        } else {
+            // Reembolso Arcano (Magia): chance to recover this attempt's cost.
+            if (magiaOn && magia.refundChance(player) > ThreadLocalRandom.current().nextInt(100)) {
+                plugin.getCostService().refund(player, cost);
+                charged = 0;
+                refunded = true;
             }
-            if (!EnchantingLogic.hasReagent(player, step.reagent())) {
-                resourceStop = "reagent"; blockingStep = step; break;
+            // Downgrade penalty: only when there is a level to lose; level I drops
+            // to nothing (the enchantment is removed outright).
+            if (config.isDowngradeEnabled() && currentLevel >= 1
+                    && ThreadLocalRandom.current().nextInt(100)
+                            < config.getDowngradeChance(offer.rarityId())) {
+                downgraded = true;
+                newLevel = currentLevel - 1;
+                working = newLevel <= 0
+                        ? EnchantmentHelper.removeEnchantment(working, enchantment)
+                        : EnchantingLogic.applyEnchantment(working, enchantment, newLevel);
             }
-            if (!plugin.getCostService().deduct(player, stepCost)) {
-                resourceStop = "cost"; blockingStep = step; break;
-            }
-            EnchantingLogic.consumeReagent(player, step.reagent());
-            totalCharged += stepCost.intAmount();
-            if (!charged) {
-                applyCooldown();
-                charged = true;
-            }
-
-            final boolean ok = !config.isSuccessChanceEnabled()
-                    || java.util.concurrent.ThreadLocalRandom.current().nextInt(100) < effChance;
-            if (!ok) {
-                rollFailed = true;
-                // Sub-ability "Reembolso Arcano": chance (scales with Magia) to refund
-                // this failed rung's cost — softens the success-chance sink.
-                if (magiaOn && magia.refundChance(player)
-                        > java.util.concurrent.ThreadLocalRandom.current().nextInt(100)) {
-                    plugin.getCostService().refund(player, stepCost);
-                    totalCharged -= stepCost.intAmount();
-                    refunded = true;
-                    refundedCost = stepCost;
-                }
-                break; // keep what we have; this rung's cost + reagent is the loss
-            }
-            working = EnchantingLogic.applyEnchantment(working, enchantment, lvl);
-            reachedLevel = lvl;
-            levelsGained++;
-
-            // Curse roll PER gained level (so climbing in one click or step-by-step is
-            // equally risky), but at most one curse per operation.
-            if (appliedCurse == null) {
-                appliedCurse = maybeApplyCurse(working, targetOffer.rarityId());
-                if (appliedCurse != null) {
-                    working = EnchantingLogic.applyEnchantment(working, appliedCurse, 1);
-                }
-            }
-        }
-
-        // One booster covers the whole climb (a guarantee seal guarantees every rung).
-        if (boosterPercent > 0 && charged && (levelsGained > 0 || !config.isBoostersConsumedOnSuccessOnly())) {
-            consumeBooster();
-        }
-
-        // Nothing happened (the very first rung blocked on resources) → explain, no cooldown.
-        if (!charged && resourceStop != null) {
-            config.getErrorSound().play(player);
-            sendResourceError(player, resourceStop, blockingStep);
-            return;
         }
 
         com.willfp.eco.core.display.Display.display(working, player);
         inventory.setItem(SLOT_INPUT, working);
 
-        // Magia XP for the operation (per level gained + a slice on a failed rung). Granted
-        // BEFORE feedback so the action bar can report how much XP was earned ({magia}).
-        final double magiaXp = (magiaOn && charged)
-                ? magia.grantXp(player, targetOffer.rarityId(), levelsGained, rollFailed)
+        // Magia XP (per level gained + a slice on failure). Granted BEFORE feedback
+        // so the action bar can report how much XP was earned ({magia}).
+        final double magiaXp = magiaOn
+                ? magia.grantXp(player, offer.rarityId(), ok ? 1 : 0, !ok)
                 : 0.0;
-        // The operation may have raised the Magia level (new bonuses) → refresh the panel.
         if (magiaXp > 0) {
-            refreshStatsHead();
+            refreshStatsHead(); // the attempt may have raised the Magia level
         }
         final String magiaInfo = magiaXp > 0
                 ? msg.format("enchanting.magia-xp-suffix",
                         Map.of("{xp}", String.valueOf((long) Math.round(magiaXp))))
                 : "";
-        final String refundInfo = (refunded && refundedCost != null)
-                ? msg.format("enchanting.refund-suffix", Map.of("{cost}", refundedCost.displayText()))
+        final String refundInfo = refunded
+                ? msg.format("enchanting.refund-suffix", Map.of("{cost}", cost.displayText()))
                 : "";
+        final String attemptName = levelName(offer, step.level());
 
-        // ── Feedback ────────────────────────────────────────────────────────────
-        if (levelsGained == 0) {
-            // First rung failed the RNG roll. Reembolso Arcano changes the message
-            // (you didn't lose the cost) when it kicked in.
+        // ── Feedback ────────────────────────────────────────────────────────
+        final org.bukkit.Location effectLoc = tableBlock.getLocation().add(0.5, 1.5, 0.5);
+        if (ok && appliedCurse != null) {
+            config.getEnchantFailSound().play(player);
+            config.getEnchantFailParticle().spawn(player.getWorld(), effectLoc);
+            player.sendActionBar(msg.parsed("enchanting.cursed",
+                    Map.of("{enchantment}", attemptName,
+                            "{curse}", plugin.getEcoHook().displayNameOrFallback(appliedCurse),
+                            "{magia}", magiaInfo)));
+        } else if (ok) {
+            config.getEnchantSuccessSound().play(player);
+            config.getEnchantSuccessParticle().spawn(player.getWorld(), effectLoc);
+            player.sendActionBar(msg.parsed("enchanting.enchant-success",
+                    Map.of("{enchantment}", attemptName, "{magia}", magiaInfo)));
+        } else if (downgraded) {
+            config.getEnchantDowngradeSound().play(player);
+            config.getEnchantFailParticle().spawn(player.getWorld(), effectLoc);
+            final String key = newLevel <= 0
+                    ? "enchanting.enchant-downgrade-lost" : "enchanting.enchant-downgrade";
+            player.sendActionBar(msg.parsed(key,
+                    Map.of("{enchantment}", attemptName,
+                            "{level}", levelName(offer, newLevel),
+                            "{chance}", String.valueOf(effChance),
+                            "{refund}", refundInfo,
+                            "{magia}", magiaInfo)));
+        } else {
             config.getEnchantFailSound().play(player);
             config.getEnchantFailParticle().spawn(player.getWorld(), effectLoc);
             player.sendActionBar(msg.parsed(
                     refunded ? "enchanting.enchant-fail-refund" : "enchanting.enchant-fail",
-                    Map.of("{enchantment}", levelName(targetOffer, startLevel + 1),
+                    Map.of("{enchantment}", attemptName,
                             "{chance}", String.valueOf(effChance),
-                            "{cost}", refundedCost != null ? refundedCost.displayText() : "",
-                            "{magia}", magiaInfo)));
-        } else if (appliedCurse != null) {
-            config.getEnchantFailSound().play(player);
-            config.getEnchantFailParticle().spawn(player.getWorld(), effectLoc);
-            player.sendActionBar(msg.parsed("enchanting.cursed",
-                    Map.of("{enchantment}", levelName(targetOffer, reachedLevel),
-                            "{curse}", plugin.getEcoHook().displayNameOrFallback(appliedCurse),
-                            "{magia}", magiaInfo)));
-        } else if (rollFailed || resourceStop != null) {
-            // Partial climb: reached an intermediate level, then a rung failed / ran out.
-            config.getEnchantSuccessSound().play(player);
-            config.getEnchantSuccessParticle().spawn(player.getWorld(), effectLoc);
-            player.sendActionBar(msg.parsed("enchanting.enchant-partial",
-                    Map.of("{enchantment}", levelName(targetOffer, reachedLevel),
-                            "{next}", EnchantFormulas.toRoman(reachedLevel + 1),
-                            "{refund}", refundInfo,
-                            "{magia}", magiaInfo)));
-        } else {
-            config.getEnchantSuccessSound().play(player);
-            config.getEnchantSuccessParticle().spawn(player.getWorld(), effectLoc);
-            player.sendActionBar(msg.parsed("enchanting.enchant-success",
-                    Map.of("{enchantment}", levelName(targetOffer, reachedLevel),
+                            "{cost}", cost.displayText(),
                             "{magia}", magiaInfo)));
         }
 
+        // ── Audit ───────────────────────────────────────────────────────────
         final var audit = plugin.getAuditLog();
-        final String auditSummary = enchantment.getKey().getKey() + " " + startLevel + " -> " + reachedLevel
+        final String action = ok
+                ? (appliedCurse != null ? "ENCHANT-CURSE" : "ENCHANT")
+                : (downgraded ? "ENCHANT-DOWN" : "ENCHANT-X");
+        final String auditSummary = enchantment.getKey().getKey()
+                + " " + currentLevel + " -> " + newLevel
                 + (appliedCurse != null ? "  +curse:" + appliedCurse.getKey().getKey() : "");
-        audit.record(player,
-                levelsGained == 0 ? "ENCHANT-X" : (appliedCurse != null ? "ENCHANT-CURSE" : "ENCHANT"),
-                auditSummary,
-                new dev.scrulius.superenchanter.economy.Cost(costType, totalCharged),
-                audit.snap("item", working));
+        audit.record(player, action, auditSummary,
+                new Cost(cost.type(), charged), audit.snap("item", working));
 
         updatePreview();
         persistInputItems();
     }
 
     /** Display name with its roman level suffix (omitted for single-level enchantments). */
-    private String levelName(@NotNull LevelEnchantmentOffer offer, int level) {
-        return offer.displayName() + (offer.maxLevel() > 1 ? " " + EnchantFormulas.toRoman(level) : "");
-    }
-
-    /** Sends the specific "can't afford / not enough power / reagent" actionbar for a blocked rung. */
-    private void sendResourceError(@NotNull Player player, @NotNull String reason,
-                                   @NotNull LevelEnchantmentOffer step) {
-        switch (reason) {
-            case "power" -> player.sendActionBar(msg.parsed("enchanting.not-enough-power",
-                    Map.of("{required}", String.valueOf(step.requiredPower()),
-                            "{current}", String.valueOf(bookshelfPower))));
-            case "reagent" -> player.sendActionBar(msg.parsed("enchanting.not-enough-reagent",
-                    EnchantingLogic.reagentPlaceholders(step.reagent())));
-            default -> {
-                var c = plugin.getCostService().effectiveCost(player, step.stepCost());
-                final var m = plugin.getMagiaService();
-                if (m != null && m.isEnabled()) c = m.applyDiscount(player, c); // Carril 2
-                player.sendActionBar(msg.parsed("enchanting.not-enough-xp",
-                        Map.of("{cost}", c.displayText(),
-                                "{balance}", plugin.getCostService().balanceText(player, c.type()))));
-            }
-        }
-    }
-
-    /**
-     * Returns the potentiator percentage the item in the booster slot contributes for
-     * an enchantment of the given rarity. A rarity-targeted orb only contributes to
-     * its matching rarity, so the same orb can guarantee one rarity and do nothing
-     * for another.
-     *
-     * @param enchantRarity the rarity id of the enchantment being attempted
-     * @return the contributed percent, or {@code 0} when off / empty / wrong rarity
-     */
-    private int currentBoosterPercent(@org.jetbrains.annotations.Nullable String enchantRarity) {
-        if (!boosterEnabled) {
-            return 0;
-        }
-        final ItemStack booster = inventory.getItem(SLOT_BOOSTER);
-        if (booster == null || booster.getType() == Material.AIR) {
-            return 0;
-        }
-        final String mythicId = plugin.getMythicMobsHook().getItemId(booster);
-        return plugin.getPluginConfig().getBoosterPercent(mythicId, enchantRarity);
-    }
-
-    /**
-     * When a seal sits in the slot but doesn't contribute for {@code enchantRarity}
-     * (it's bound to a different, specific rarity), returns that seal's target rarity
-     * id so the icon can explain the mismatch. Returns {@code null} when there's no
-     * seal, it isn't a configured seal, or it's a universal seal (which always applies,
-     * so a 0% there means the feature is off rather than a rarity mismatch).
-     */
-    @org.jetbrains.annotations.Nullable
-    private String sealMismatchRarityId(@org.jetbrains.annotations.Nullable String enchantRarity) {
-        if (!boosterEnabled) {
-            return null;
-        }
-        final ItemStack booster = inventory.getItem(SLOT_BOOSTER);
-        if (booster == null || booster.getType() == Material.AIR) {
-            return null;
-        }
-        final String mythicId = plugin.getMythicMobsHook().getItemId(booster);
-        final PluginConfig.Booster b = plugin.getPluginConfig().getBooster(mythicId);
-        if (b == null || b.rarity() == null) {
-            return null; // not a seal, or universal seal (no specific rarity to name)
-        }
-        return b.percentFor(enchantRarity) > 0 ? null : b.rarity();
+    private String levelName(@NotNull AnalyzedEnchant offer, int level) {
+        return offer.displayName()
+                + (offer.maxLevel() > 1 && level > 0 ? " " + EnchantFormulas.toRoman(level) : "");
     }
 
     /**
      * Rolls for a curse on a successful enchant. Returns the curse to apply, or {@code null}
      * if the feature is off, the roll missed, or no curse targets the item. By design there
      * is NO prevention — the curse is an unavoidable gamble; the cure is the Sello Purificador
-     * in the anvil.
+     * in the anvil. The exact probability is shown in the icon before clicking.
      *
      * @param enchanted the freshly enchanted item (the curse must target it)
      * @param rarityId  the rarity of the enchant just applied (per-rarity curse chance)
      * @return the curse to apply, or {@code null} if none
      */
-    private org.bukkit.enchantments.Enchantment maybeApplyCurse(
-            @NotNull ItemStack enchanted,
-            @org.jetbrains.annotations.Nullable String rarityId) {
+    private Enchantment maybeApplyCurse(@NotNull ItemStack enchanted,
+                                        @org.jetbrains.annotations.Nullable String rarityId) {
         final PluginConfig config = plugin.getPluginConfig();
         if (!config.isCurseChanceEnabled()) {
             return null;
         }
         final double chance = config.getCurseChance(rarityId);
-        if (chance <= 0
-                || java.util.concurrent.ThreadLocalRandom.current().nextDouble(100.0) >= chance) {
+        if (chance <= 0 || ThreadLocalRandom.current().nextDouble(100.0) >= chance) {
             return null; // feature on but the roll missed
         }
         return plugin.getEcoHook().randomApplicableCurse(
                 enchanted, config.getExcludedCurseKeys());
     }
 
-    /** Consumes one potentiator from the booster slot, clearing it when it runs out. */
-    private void consumeBooster() {
-        final ItemStack booster = inventory.getItem(SLOT_BOOSTER);
-        if (booster == null || booster.getType() == Material.AIR) {
-            return;
-        }
-        final int left = booster.getAmount() - 1;
-        if (left <= 0) {
-            inventory.setItem(SLOT_BOOSTER, new ItemStack(Material.AIR));
-        } else {
-            booster.setAmount(left);
-            inventory.setItem(SLOT_BOOSTER, booster);
-        }
-    }
-
     // ── Rendering helpers ───────────────────────────────────────────────────
 
     private int currentTotal() {
-        if (selectedEnchantment != null) {
-            return levelOffers.size();
-        }
-        if (selectedCategory != null) {
-            return enchantOffers.size();
-        }
-        return categoryOffers.size();
+        return selectedCategory != null ? enchantOffers.size() : categoryOffers.size();
     }
 
     private void renderPage() {
@@ -634,15 +498,11 @@ public final class EnchantingGUI extends AbstractCustomGUI {
             final int guiSlot = OFFER_SLOTS.get(i);
 
             if (offerIndex < end) {
-                if (selectedEnchantment != null) {
-                    final LevelEnchantmentOffer lvlOffer = levelOffers.get(offerIndex);
-                    final int bp = currentBoosterPercent(lvlOffer.rarityId());
-                    inventory.setItem(guiSlot,
-                            EnchantingLogic.createLevelOfferIcon(lvlOffer, player, bp,
-                                    bp > 0 ? null : sealMismatchRarityId(lvlOffer.rarityId()), plugin));
-                } else if (selectedCategory != null) {
-                    inventory.setItem(guiSlot,
-                            EnchantingLogic.createEnchantIcon(enchantOffers.get(offerIndex), player, plugin));
+                if (selectedCategory != null) {
+                    final AnalyzedEnchant offer = enchantOffers.get(offerIndex);
+                    inventory.setItem(guiSlot, EnchantingLogic.createEnchantIcon(
+                            offer, EnchantingLogic.nextStep(offer, plugin),
+                            player, bookshelfPower, plugin));
                 } else {
                     inventory.setItem(guiSlot,
                             EnchantingLogic.createCategoryIcon(categoryOffers.get(offerIndex), plugin));
@@ -656,8 +516,7 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     }
 
     private void renderCloseOrBackButton() {
-        final boolean atRoot = selectedCategory == null && selectedEnchantment == null;
-        if (atRoot) {
+        if (selectedCategory == null) {
             inventory.setItem(SLOT_CLOSE, new ItemBuilder(Material.BARRIER)
                     .name(msg.raw("enchanting.close-name"))
                     .build());
@@ -711,11 +570,13 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     private ItemStack buildPowerIcon() {
         return new ItemBuilder(Material.CHISELED_BOOKSHELF)
                 .name(msg.raw("enchanting.power-name"))
-                .lore(msg.formatList("enchanting.power-lore",
-                        Map.of("{current}", String.valueOf(powerScan.total()),
-                                "{vanilla}", String.valueOf(powerScan.vanilla()),
-                                "{library}", String.valueOf(powerScan.library()),
-                                "{max}", String.valueOf(powerScan.max()))))
+                .lore(msg.formatList("enchanting.power-lore", Map.of(
+                        "{bar}", EnchantFormulas.progressBar(powerScan.total(), powerScan.max(),
+                                EnchantingLogic.BAR_SEGMENTS, BAR_POWER_TAG, EnchantingLogic.BAR_EMPTY_TAG),
+                        "{current}", String.valueOf(powerScan.total()),
+                        "{vanilla}", String.valueOf(powerScan.vanilla()),
+                        "{library}", String.valueOf(powerScan.library()),
+                        "{max}", String.valueOf(powerScan.max()))))
                 .build();
     }
 

@@ -58,9 +58,6 @@ public final class PluginConfig {
     private List<String> disabledEnchantments;
     private Map<String, Double> rarityCostMultipliers;
     private double defaultRarityMultiplier;
-    private Map<String, Reagent> rarityReagents;
-    private Reagent defaultReagent;
-    private boolean reagentScalesWithLevel;
     private Map<String, RarityPower> rarityPower;
     private RarityPower defaultRarityPower;
     private Map<String, Integer> enchantedBookshelves;
@@ -71,9 +68,12 @@ public final class PluginConfig {
     // ── Probabilistic enchanting (cached) ──
     private boolean successChanceEnabled;
     private int defaultSuccessChance;
-    private boolean boostersConsumedOnSuccessOnly;
     private Map<String, Integer> raritySuccessChance;
-    private Map<String, Booster> successBoosters;
+
+    // ── Downgrade penalty (cached) — a failed attempt may drop one level ──
+    private boolean downgradeEnabled;
+    private int downgradeDefaultChance;
+    private Map<String, Integer> downgradeRarityChance = java.util.Collections.emptyMap();
 
     // ── Transfer settings (cached) ──
     private boolean transferEnabled;
@@ -137,6 +137,7 @@ public final class PluginConfig {
     private SoundEffect anvilSuccessSound;
     private SoundEffect enchantSuccessSound;
     private SoundEffect enchantFailSound;
+    private SoundEffect enchantDowngradeSound;
     private SoundEffect transferSuccessSound;
     private SoundEffect extractSuccessSound;
     private SoundEffect errorSound;
@@ -169,20 +170,6 @@ public final class PluginConfig {
     }
 
     /**
-     * A material reagent consumed when enchanting, resolved per EcoEnchants rarity.
-     *
-     * @param material        the required material
-     * @param amount          how many to consume
-     * @param customModelData optional custom model data the item must carry, or {@code null} for any
-     */
-    public record Reagent(@NotNull Material material, int amount, @Nullable Integer customModelData) {
-        /** @return {@code true} when this reagent requires nothing (no material or non-positive amount) */
-        public boolean isEmpty() {
-            return amount <= 0;
-        }
-    }
-
-    /**
      * Bookshelf-power requirement for a rarity: {@code floor + level * step},
      * capped at {@code max-bookshelf-power}. The floor makes a rarity demand a
      * minimum power even at level I, so power gates <em>magnitude</em> (rarity),
@@ -192,31 +179,6 @@ public final class PluginConfig {
      * @param step  extra power required per level
      */
     public record RarityPower(int floor, int step) {}
-
-    /**
-     * A potentiator item ("orb") for probabilistic enchanting.
-     * <p>
-     * It adds {@code percent} points to the success chance, but only for
-     * enchantments whose rarity matches {@code rarity}. A {@code null} {@code rarity}
-     * is a universal orb (applies to any rarity). A {@code percent} of {@code 100}
-     * (or more) on its matching rarity is a per-rarity <em>guarantee orb</em>:
-     * an "orbe raro" makes a rare enchantment land 100% of the time.
-     *
-     * @param rarity  the EcoEnchants rarity id this orb targets, or {@code null} for any
-     * @param percent the percentage points it contributes (100 = guarantee)
-     */
-    public record Booster(@Nullable String rarity, int percent) {
-        /**
-         * @param enchantRarity the rarity id of the enchantment being attempted
-         * @return {@code percent} when this orb applies to that rarity, else {@code 0}
-         */
-        public int percentFor(@Nullable String enchantRarity) {
-            if (rarity == null) {
-                return percent; // universal orb
-            }
-            return rarity.equalsIgnoreCase(enchantRarity) ? percent : 0;
-        }
-    }
 
     /**
      * Per-enchantment override (under {@code enchanting.enchantment-overrides}).
@@ -364,9 +326,6 @@ public final class PluginConfig {
     /** @return the hard cap on XP-level cost for a single enchant operation */
     public int getMaxXpCost() { return maxXpCost; }
 
-    /** @return whether the reagent amount scales with the enchantment level */
-    public boolean isReagentScalingWithLevel() { return reagentScalesWithLevel; }
-
     /**
      * @param rarityId the EcoEnchants rarity id (case-insensitive), may be {@code null}
      * @return the power floor/step for that rarity, or the default if unmapped
@@ -414,46 +373,21 @@ public final class PluginConfig {
     }
 
     /**
-     * Returns how many success-chance points the given potentiator item contributes
-     * for an enchantment of a given rarity. A rarity-targeted orb only contributes
-     * when {@code enchantRarity} matches its rarity (otherwise {@code 0}); a universal
-     * orb always contributes its percent.
-     *
-     * @param mythicId      the MythicMobs id of the orb (case-insensitive), may be {@code null}
-     * @param enchantRarity the EcoEnchants rarity id of the enchantment being attempted
-     * @return the points contributed, or {@code 0} if not a configured orb / wrong rarity
+     * Whether a failed enchant attempt can additionally DOWNGRADE the enchantment one
+     * level (the hardcore penalty). Only meaningful while {@link #isSuccessChanceEnabled()}.
      */
-    public int getBoosterPercent(@Nullable String mythicId, @Nullable String enchantRarity) {
-        if (mythicId == null) {
-            return 0;
-        }
-        final Booster booster = successBoosters.get(mythicId.toLowerCase(Locale.ROOT));
-        return booster == null ? 0 : booster.percentFor(enchantRarity);
-    }
+    public boolean isDowngradeEnabled() { return downgradeEnabled; }
 
     /**
-     * Returns the configured {@link Booster} for a potentiator item, or {@code null}
-     * if the id isn't a configured seal. Unlike {@link #getBoosterPercent}, this
-     * exposes the seal's target rarity so the menu can tell the player <em>why</em>
-     * a seal isn't contributing (wrong rarity) instead of silently showing nothing.
-     *
-     * @param mythicId the MythicMobs id of the seal (case-insensitive), may be {@code null}
-     * @return the booster definition, or {@code null} if not a configured seal
+     * @param rarityId the EcoEnchants rarity id (case-insensitive), may be {@code null}
+     * @return the chance (0–100) that a FAILED attempt drops the enchantment one level
      */
-    public @Nullable Booster getBooster(@Nullable String mythicId) {
-        if (mythicId == null) {
-            return null;
+    public int getDowngradeChance(@Nullable String rarityId) {
+        if (rarityId == null) {
+            return downgradeDefaultChance;
         }
-        return successBoosters.get(mythicId.toLowerCase(Locale.ROOT));
+        return downgradeRarityChance.getOrDefault(rarityId.toLowerCase(Locale.ROOT), downgradeDefaultChance);
     }
-
-    /** @return the configured potentiator MythicMobs ids (lowercase, unmodifiable) */
-    public @NotNull java.util.Set<String> getSuccessBoosterIds() {
-        return Collections.unmodifiableSet(successBoosters.keySet());
-    }
-
-    /** @return whether a potentiator is only consumed on a successful enchant (vs. every attempt) */
-    public boolean isBoostersConsumedOnSuccessOnly() { return boostersConsumedOnSuccessOnly; }
 
     /** @return the number of enchantments shown per page in the GUI */
     public int getEnchantsPerPage() { return enchantsPerPage; }
@@ -539,20 +473,6 @@ public final class PluginConfig {
         return rarityCostMultipliers.getOrDefault(rarityId.toLowerCase(java.util.Locale.ROOT), defaultRarityMultiplier);
     }
 
-    /**
-     * @param rarityId the EcoEnchants rarity id (case-insensitive), may be {@code null}
-     * @return the reagent required for that rarity, or the default reagent, or {@code null} if none
-     */
-    public @Nullable Reagent getReagent(@Nullable String rarityId) {
-        if (rarityId != null) {
-            Reagent specific = rarityReagents.get(rarityId.toLowerCase(java.util.Locale.ROOT));
-            if (specific != null) {
-                return specific;
-            }
-        }
-        return defaultReagent;
-    }
-
     // ────────────────────────────────────────────────────────────
     //  Transfer Accessors
     // ────────────────────────────────────────────────────────────
@@ -606,6 +526,9 @@ public final class PluginConfig {
 
     /** @return the sound played when a probabilistic enchant attempt fails */
     public @NotNull SoundEffect getEnchantFailSound() { return enchantFailSound; }
+
+    /** @return the sound played when a failed attempt also downgrades the enchantment */
+    public @NotNull SoundEffect getEnchantDowngradeSound() { return enchantDowngradeSound; }
 
     /** @return the sound played on a successful enchantment transfer */
     public @NotNull SoundEffect getTransferSuccessSound() { return transferSuccessSound; }
@@ -705,9 +628,6 @@ public final class PluginConfig {
         disabledEnchantments = config.getStringList("enchanting.disabled-enchantments");
         defaultRarityMultiplier = config.getDouble("enchanting.default-rarity-multiplier", 1.0);
         rarityCostMultipliers = parseRarityMultipliers();
-        rarityReagents = parseRarityReagents();
-        defaultReagent = parseReagentSection(config.getConfigurationSection("enchanting.default-reagent"));
-        reagentScalesWithLevel = config.getBoolean("enchanting.reagent-scales-with-level", true);
         defaultRarityPower = new RarityPower(
                 config.getInt("enchanting.default-rarity-power.floor", 0),
                 config.getInt("enchanting.default-rarity-power.step", 4));
@@ -717,10 +637,11 @@ public final class PluginConfig {
         enchantmentOverrides = parseEnchantmentOverrides();
         successChanceEnabled = config.getBoolean("enchanting.success-chance.enabled", true);
         defaultSuccessChance = clampPercent(config.getInt("enchanting.success-chance.default", 100));
-        boostersConsumedOnSuccessOnly =
-                config.getBoolean("enchanting.success-chance.boosters-consumed-on-success-only", false);
         raritySuccessChance = parsePercentMap("enchanting.success-chance.by-rarity");
-        successBoosters = parseBoosters("enchanting.success-chance.boosters");
+        downgradeEnabled = config.getBoolean("enchanting.success-chance.downgrade.enabled", true);
+        downgradeDefaultChance =
+                clampPercent(config.getInt("enchanting.success-chance.downgrade.default", 20));
+        downgradeRarityChance = parsePercentMap("enchanting.success-chance.downgrade.by-rarity");
         curseChanceEnabled = config.getBoolean("enchanting.curse-chance.enabled", true);
         curseBasePercent = Math.max(0, config.getDouble("enchanting.curse-chance.base-percent", 1.0));
         curseRarityChance = parseDoubleMap("enchanting.curse-chance.by-rarity");
@@ -732,7 +653,7 @@ public final class PluginConfig {
         return Collections.unmodifiableSet(curseExcluded);
     }
 
-    /** @return whether enchanting can apply a random curse (prevented by a seal) */
+    /** @return whether enchanting can apply a random curse (no prevention; cured in the anvil) */
     public boolean isCurseChanceEnabled() { return curseChanceEnabled; }
 
     /**
@@ -767,51 +688,14 @@ public final class PluginConfig {
         return values;
     }
 
-    /**
-     * Parses the potentiator section. Each entry is either:
-     * <ul>
-     *   <li>a section {@code { rarity: <id|*>, percent: <int> }} — a rarity-targeted
-     *       orb ({@code rarity: '*'}/{@code any}/{@code all} or omitted = universal,
-     *       {@code percent} defaults to 100 → a guarantee orb), or</li>
-     *   <li>a plain int {@code id: 25} — a universal booster of that many points.</li>
-     * </ul>
-     */
-    private @NotNull Map<String, Booster> parseBoosters(@NotNull String path) {
-        Map<String, Booster> values = new HashMap<>();
-        ConfigurationSection section = config.getConfigurationSection(path);
-        if (section == null) {
-            return values;
-        }
-        for (String key : section.getKeys(false)) {
-            final String id = key.toLowerCase(Locale.ROOT);
-            if (section.isConfigurationSection(key)) {
-                ConfigurationSection entry = section.getConfigurationSection(key);
-                String rarity = entry.getString("rarity", null);
-                if (rarity != null) {
-                    rarity = rarity.trim().toLowerCase(Locale.ROOT);
-                    if (rarity.isEmpty() || rarity.equals("*")
-                            || rarity.equals("any") || rarity.equals("all")) {
-                        rarity = null;
-                    }
-                }
-                values.put(id, new Booster(rarity, Math.max(0, entry.getInt("percent", 100))));
-            } else {
-                // Plain int form → universal booster.
-                values.put(id, new Booster(null, Math.max(0, section.getInt(key, 0))));
-            }
-        }
-        return values;
-    }
-
     /** Clamps an int to the {@code [0, 100]} percentage range. */
     private static int clampPercent(int value) {
         return Math.max(0, Math.min(100, value));
     }
 
     /**
-     * Parses a {@code id → int} section (used for per-rarity chances and booster
-     * percentages). Keys are lowercased; rarity values are clamped to {@code [0,100]},
-     * booster values are kept as-is (a value {@code >= 100} = guarantee).
+     * Parses a {@code id → int} section (used for per-rarity percentages).
+     * Keys are lowercased; values are floored at 0.
      */
     private @NotNull Map<String, Integer> parsePercentMap(@NotNull String path) {
         Map<String, Integer> values = new HashMap<>();
@@ -919,40 +803,6 @@ public final class PluginConfig {
             }
         }
         return values;
-    }
-
-    private @NotNull Map<String, Reagent> parseRarityReagents() {
-        Map<String, Reagent> values = new HashMap<>();
-        ConfigurationSection section = config.getConfigurationSection("enchanting.rarity-reagents");
-        if (section != null) {
-            for (String key : section.getKeys(false)) {
-                Reagent reagent = parseReagentSection(section.getConfigurationSection(key));
-                if (reagent != null) {
-                    values.put(key.toLowerCase(Locale.ROOT), reagent);
-                }
-            }
-        }
-        return values;
-    }
-
-    private @Nullable Reagent parseReagentSection(@Nullable ConfigurationSection section) {
-        if (section == null) {
-            return null;
-        }
-        String materialName = section.getString("material");
-        if (materialName == null || materialName.isBlank()) {
-            return null;
-        }
-        Material material = Material.matchMaterial(materialName);
-        if (material == null) {
-            plugin.getLogger().warning("Invalid reagent material '" + materialName + "' in config.yml; ignoring.");
-            return null;
-        }
-        int amount = section.getInt("amount", 1);
-        Integer cmd = section.contains("custom-model-data")
-                ? section.getInt("custom-model-data")
-                : null;
-        return new Reagent(material, amount, cmd);
     }
 
     private void loadTransferSettings() {
@@ -1085,6 +935,7 @@ public final class PluginConfig {
         anvilSuccessSound = parseSound("anvil-success", "block.anvil.use");
         enchantSuccessSound = parseSound("enchant-success", "block.enchantment_table.use");
         enchantFailSound = parseSound("enchant-fail", "block.fire.extinguish");
+        enchantDowngradeSound = parseSound("enchant-downgrade", "entity.item.break");
         transferSuccessSound = parseSound("transfer-success", "block.amethyst_block.chime");
         extractSuccessSound = parseSound("extract-success", "block.amethyst_block.chime");
         errorSound = parseSound("error", "entity.villager.no");

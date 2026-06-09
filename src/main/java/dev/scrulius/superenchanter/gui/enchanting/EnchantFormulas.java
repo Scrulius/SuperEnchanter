@@ -12,6 +12,9 @@ public final class EnchantFormulas {
             "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"
     };
 
+    /** Glyph used for every text progress bar segment (renders in the vanilla font). */
+    private static final char BAR_SEGMENT = '■';
+
     private EnchantFormulas() {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
@@ -38,44 +41,16 @@ public final class EnchantFormulas {
     }
 
     /**
-     * Cumulative XP cost of upgrading an enchantment from {@code currentLevel} to
-     * {@code targetLevel}: the sum of every individual level step in between, so
-     * jumping straight to level V in one click costs exactly the same as forging
-     * I→II→III→IV→V by hand. This is what turns the cost curve into a real sink —
-     * the per-level cap still applies to each step before they are summed.
-     * <p>
-     * {@code perLevelCost[i]} is the cost of reaching level {@code i + 1} from the
-     * level below it. Steps at or below {@code currentLevel} are already paid for
-     * and therefore never re-charged.
-     *
-     * @param perLevelCost the per-level step costs, indexed from level 1 at [0]
-     * @param currentLevel the level already on the item (0 if absent)
-     * @param targetLevel  the level being purchased (1-based)
-     * @return the summed cost of every step in {@code (currentLevel, targetLevel]}, at least 1
-     */
-    public static int cumulativeCost(int[] perLevelCost, int currentLevel, int targetLevel) {
-        long total = 0;
-        for (int lvl = currentLevel + 1; lvl <= targetLevel; lvl++) {
-            if (lvl >= 1 && lvl <= perLevelCost.length) {
-                total += perLevelCost[lvl - 1];
-            }
-        }
-        return (int) Math.max(1L, Math.min((long) Integer.MAX_VALUE, total));
-    }
-
-    /**
      * Effective success chance (0–100) of an enchant attempt: the per-rarity base
-     * chance plus the percentage contributed by any potentiator item, clamped to
-     * {@code [0, 100]}. A potentiator worth {@code >= 100} therefore <em>guarantees</em>
-     * the enchant (a "guarantee orb") — boosters and guarantee orbs are the same
-     * additive mechanic, a guarantee just reaches the cap.
+     * chance plus any bonus percentage points (today that's only the Magia skill
+     * bonus — the rarity seals were removed by design), clamped to {@code [0, 100]}.
      *
-     * @param baseChance     the per-rarity base success chance (0–100)
-     * @param boosterPercent extra percentage points from the potentiator (0 if none)
+     * @param baseChance   the per-rarity base success chance (0–100)
+     * @param bonusPercent extra percentage points (0 if none)
      * @return the clamped effective chance in {@code [0, 100]}
      */
-    public static int effectiveChance(int baseChance, int boosterPercent) {
-        final int sum = baseChance + boosterPercent;
+    public static int effectiveChance(int baseChance, int bonusPercent) {
+        final int sum = baseChance + bonusPercent;
         return Math.max(0, Math.min(100, sum));
     }
 
@@ -92,6 +67,59 @@ public final class EnchantFormulas {
      */
     public static int requiredPowerForLevel(int floor, int step, int level, int maxPower) {
         return Math.min(maxPower, floor + level * step);
+    }
+
+    /**
+     * How many segments of a text progress bar are filled for {@code value} out of
+     * {@code max}: proportional, rounded to the nearest segment, clamped to
+     * {@code [0, segments]}. A non-positive {@code max} renders an empty bar.
+     *
+     * @param value    the current value (clamped to {@code [0, max]})
+     * @param max      the value that fills the whole bar
+     * @param segments the total number of bar segments
+     * @return the number of filled segments in {@code [0, segments]}
+     */
+    public static int filledSegments(double value, double max, int segments) {
+        if (segments <= 0) {
+            return 0;
+        }
+        if (max <= 0 || value <= 0) {
+            return 0;
+        }
+        final double fraction = Math.min(1.0, value / max);
+        return Math.min(segments, (int) Math.round(fraction * segments));
+    }
+
+    /**
+     * Renders a MiniMessage text progress bar: the filled run wrapped in
+     * {@code filledTag} and the empty run wrapped in {@code emptyTag}, both using
+     * the {@code ■} glyph (present in the vanilla font — no resource pack). Tags
+     * are raw MiniMessage open tags, e.g. {@code "<gradient:#43E97B:#38D9A9>"} or
+     * {@code "<#3A3F46>"}; gradient tags are auto-closed.
+     *
+     * @param value     the current value
+     * @param max       the value that fills the whole bar
+     * @param segments  the total number of bar segments
+     * @param filledTag MiniMessage open tag for the filled run
+     * @param emptyTag  MiniMessage open tag for the empty run
+     * @return the MiniMessage string for the bar
+     */
+    public static String progressBar(double value, double max, int segments,
+                                     String filledTag, String emptyTag) {
+        final int filled = filledSegments(value, max, segments);
+        final StringBuilder sb = new StringBuilder(segments + 48);
+        if (filled > 0) {
+            sb.append(filledTag);
+            sb.append(String.valueOf(BAR_SEGMENT).repeat(filled));
+            if (filledTag.startsWith("<gradient")) {
+                sb.append("</gradient>");
+            }
+        }
+        if (filled < segments) {
+            sb.append(emptyTag);
+            sb.append(String.valueOf(BAR_SEGMENT).repeat(segments - filled));
+        }
+        return sb.toString();
     }
 
     /**

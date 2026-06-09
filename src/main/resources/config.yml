@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 12
+config-version: 13
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -119,103 +119,92 @@ enchanting:
     libreria_encantada: 10
 
   # Moneda con la que cobra la mesa de encantamientos: XP, VAULT o PLAYER_POINTS.
-  # El importe calculado por la curva de abajo se cobra en esta moneda (igual que
-  # el yunque con anvil.default-cost-type). Si pones VAULT/PLAYER_POINTS sin el
-  # plugin correspondiente, nunca se podrá pagar.
+  # DISEÑO HARDCORE: la mesa cobra SOLO Experiencia — no hay reactivos materiales
+  # ni moneda premium. Todo el riesgo/sumidero pasa por la XP del jugador.
   cost-type: XP
 
   # ── Moneda POR RAREZA (override del cost-type global) ──
-  # Cobra ciertas rarezas en una moneda distinta a la global de arriba. Las
-  # rarezas que NO aparezcan aquí usan 'cost-type'. Pensado para que Divino se
-  # compre solo con la moneda PREMIUM del servidor (PlayerPoints), mientras el
-  # resto sigue en XP. Monedas: XP, VAULT, PLAYER_POINTS. Usa los ids de rareza
-  # de tu EcoEnchants (comun/raro/epico/legendario/divino).
-  rarity-cost-type:
-    divino: PLAYER_POINTS
+  # Vacío a propósito (todo en XP). Si algún día quieres volver a cobrar una rareza
+  # en otra moneda (p.ej. divino: PLAYER_POINTS), añade aquí 'rareza: MONEDA'.
+  rarity-cost-type: {}
 
   # ── Curva de coste ──
-  # Coste POR PASO de un nivel:
-  #   paso(nivel) = min( max-xp-cost, multiplicadorRareza * (base + mult * nivel^exponente) )
+  # Coste de UN intento de subir al siguiente nivel:
+  #   coste(nivel) = min( max-xp-cost, multiplicadorRareza * (base + mult * nivel^exponente) )
   #   - cost-exponent 1.0 = lineal; >1 hace los niveles altos más caros.
-  #   - max-xp-cost capa CADA paso (no la suma) para que un solo nivel no se dispare.
-  # El coste que pagas al saltar a un nivel destino es la SUMA de los pasos desde tu
-  # nivel actual hasta el destino (ir directo a V cuesta lo mismo que forjar
-  # I→II→III→IV→V a mano). Así la curva es un sumidero real y no un peaje del último
-  # nivel. OJO: con esto los niveles altos de rarezas caras acumulan mucho; si te
-  # parece excesivo, baja base/level-xp-multiplier/max-xp-cost.
-  # Rebalanceado: el coste se cobra en NIVELES de XP y con tirada POR PASO (cada nivel
-  # es un peldaño con su tirada; conservas lo conseguido). Valores bajos a propósito.
+  #   - max-xp-cost capa cada intento para que un solo nivel no se dispare.
+  # La progresión es SECUENCIAL OBLIGATORIA: solo se puede comprar el siguiente nivel
+  # (I → II → III...), cada clic es UN intento con su tirada, y el coste se consume
+  # aunque la tirada falle. No existe el salto directo a niveles altos.
   base-xp-cost: 3
   level-xp-multiplier: 3
   cost-exponent: 1.0
   max-xp-cost: 18
 
-  # Encantamientos por página en la lista de la mesa (se capa al nº de slots).
-  enchantments-per-page: 10
+  # Encantamientos por página en la lista de la mesa (se capa al nº de slots: 7).
+  enchantments-per-page: 7
 
   # ── Encantamiento PROBABILÍSTICO ──
   # Activado por defecto (es la experiencia base de DarkMines). Ponlo en false solo
   # si quieres volver temporalmente al 100% garantizado.
-  # Cada intento de encantar tiene una PROBABILIDAD de éxito
-  # según la rareza del encantamiento. Un FALLO consume TODO igual (coste + reactivo)
-  # — ese es el riesgo y el sumidero. Aparece un slot de POTENCIADOR en la mesa
-  # (a la izquierda, bajo el ítem) donde puedes meter un item de MythicMobs que
-  # SUMA % de éxito. Un potenciador de +100% (o más) es un "orbe de garantía".
-  #   probabilidad efectiva = clamp( base(rareza) + %potenciador , 0..100 )
+  # Cada intento de subir UN nivel tiene una PROBABILIDAD de éxito según la rareza.
+  # Un FALLO consume el coste igual — ese es el riesgo y el sumidero. NO existen
+  # sellos de garantía: las únicas formas de mejorar el % son el nivel de Magia
+  # (carril 1) y, como ruta determinista cara, fusionar dos ítems idénticos en el
+  # yunque (consume el segundo ítem entero).
+  #   probabilidad efectiva = clamp( base(rareza) + bonusMagia , 0..100 )
+  # El % EXACTO se muestra en el icono (barra de progreso) antes de clicar.
   success-chance:
     enabled: true
     # Probabilidad base (0-100) para rarezas sin entrada propia.
     default: 100
-    # Si true, el potenciador SOLO se gasta cuando el encantamiento entra (en vez de
-    # consumirse en cada intento). Por defecto se gasta siempre (más punitivo/gacha).
-    boosters-consumed-on-success-only: false
-    # Probabilidad base por rareza de EcoEnchants. La rareza alta es un gamble real:
-    # legendario/divino entran pocas veces sin un sello de garantía (success-chance.
-    # boosters) o sin nivel de Magia que suba el %. ⚠️ Divino es premium (PlayerPoints):
-    # con 10% un fallo quema moneda real, así que para divino la jugada segura es el
-    # Sello Divino (garantía); el 10% es para quien arriesga. (El Reembolso Arcano de
-    # Magia devuelve parte del coste al fallar — mitiga el sumidero.)
+    # Probabilidad base por rareza. REBALANCEADA al quitar los sellos y añadir el
+    # downgrade: con las bases antiguas (divino 10) la deriva esperada por intento
+    # (p - (1-p)*downgrade) salía NEGATIVA y el nivel máximo era estadísticamente
+    # inalcanzable. Con estas bases + el gating de Magia (divino exige nivel 35 →
+    # ~+17% de éxito) la escalada es dura pero converge.
     by-rarity:
-      comun: 80
-      raro: 65
-      epico: 35
-      legendario: 20
-      divino: 10
-    # Items POTENCIADORES de MythicMobs ("sellos"): se meten en el slot de potenciador
-    # de la mesa y SUMAN % de éxito. Cada sello se ATA a una rareza: solo aporta (y
-    # solo se consume) cuando el encantamiento es de ESA rareza; con otra rareza no
-    # hace nada y no se gasta. Un sello con percent 100 sobre su rareza la GARANTIZA
-    # (un "Sello Raro" hace que un encantamiento raro entre al 100%).
-    # Formato por entrada (id = id del item de MythicMobs):
-    #   id: { rarity: <rareza>, percent: <0-100> }   # percent por defecto 100
-    #   rarity puede ser '*' / any / all (u omitirse) → sello UNIVERSAL (cualquier rareza).
-    #   También admite forma corta 'id: 25' = universal +25%.
-    # (Ejemplos listos para testear en items/superenchanter_sellos.yml.)
-    # Da los items con '/se give <id>' o con los comandos de MythicMobs.
-    boosters:
-      sello_comun:       { rarity: comun,      percent: 100 }
-      sello_raro:        { rarity: raro,       percent: 100 }
-      sello_epico:       { rarity: epico,      percent: 100 }
-      sello_legendario:  { rarity: legendario, percent: 100 }
-      sello_divino:      { rarity: divino,     percent: 100 }
-      # Universal opcional (sube cualquier rareza un poco, no garantiza):
-      # sello_universal:  { rarity: '*', percent: 25 }
+      comun: 85
+      raro: 70
+      epico: 55
+      legendario: 40
+      divino: 25
+    # ── Penalización por fallo: DOWNGRADE ──
+    # Al FALLAR un intento hay además una probabilidad (0-100, por rareza) de que el
+    # encantamiento BAJE un nivel. Solo aplica si había nivel que perder (fallar el
+    # primer intento de un encantamiento nuevo solo quema el coste). Un nivel I que
+    # baja se PIERDE por completo. El % se muestra en el icono antes de clicar.
+    # comun va a 0 a propósito: es la rareza de entrada, sin castigo extra.
+    downgrade:
+      enabled: true
+      # Para rarezas sin entrada propia.
+      default: 20
+      by-rarity:
+        comun: 0
+        raro: 15
+        epico: 20
+        legendario: 25
+        divino: 30
 
   # ── Probabilidad de maldición al encantar ──
-  # Al encantar con ÉXITO hay una probabilidad BAJA de que el ítem reciba además una
-  # MALDICIÓN aleatoria (del catálogo type: curse que targetee el ítem). Es riesgo/sabor
-  # y NO se puede prevenir (es un gamble inevitable) — la única salida es CURARLA en el
-  # yunque con el Sello Purificador (ver anvil.curse-removal).
+  # Al encantar con ÉXITO hay una probabilidad de que el ítem reciba además una
+  # MALDICIÓN aleatoria (del catálogo type: curse que targetee el ítem). NO se puede
+  # prevenir (es un gamble inevitable) — la única salida es CURARLA en el yunque con
+  # el Sello Purificador (ver anvil.curse-removal). El % EXACTO por rareza se muestra
+  # en el icono del encantamiento antes de clicar (transparencia total).
   curse-chance:
     enabled: true
-    # % de maldecir POR NIVEL GANADO al encantar con éxito (admite decimales). OJO: la
-    # tirada es por peldaño, así que subir un ítem a V (5 niveles) expone ~5×: con 0.4
-    # un ítem completo a V queda en ~2% de maldición (no 0.4%). Sube/baja con eso en mente.
-    base-percent: 0.4
-    # Override por rareza (los que no aparezcan usan base-percent). Divino es premium
-    # (se paga con moneda real) → 0 para no castigar la compra premium.
+    # % por INTENTO EXITOSO para rarezas sin entrada propia (admite decimales).
+    base-percent: 1.0
+    # Escala con la rareza: a mayor rareza, mayor riesgo de maldición. OJO: la tirada
+    # es por nivel ganado, así que llevar un divino a V expone 5 veces (~34% acumulado
+    # con 8). El Sello Purificador del yunque es la válvula de escape (y un sumidero).
     by-rarity:
-      divino: 0.0
+      comun: 0.5
+      raro: 1.5
+      epico: 3.0
+      legendario: 5.0
+      divino: 8.0
     # Maldiciones que la tirada NUNCA aplica (por key/path). Ambas vanilla quedan vetadas:
     # 'vanishing_curse' no encaja con el keepinventory (no pierdes ítems al morir) y
     # 'binding_curse' rompería el juego (no podrías quitarte la armadura NUNCA — ni morir
@@ -345,33 +334,8 @@ enchanting:
     legendario: { floor: 170, step: 30 }
     divino:     { floor: 260, step: 35 }
 
-  # ── Reactivo material por rareza ──
-  # Ítem (y cantidad) que se consume al encantar, según la rareza.
-  # 'custom-model-data' es opcional: si se indica, el ítem debe llevar ese CMD.
-  # 'default-reagent' se usa para rarezas sin entrada propia (omítelo para ninguno).
-  # Si 'reagent-scales-with-level' es true, la cantidad se multiplica por el nivel
-  # (nivel V cuesta 5x el reactivo de nivel I).
-  # OJO: con tirada POR PASO el reactivo se consume EN CADA peldaño (cada nivel es un
-  # intento). Por eso 'reagent-scales-with-level' va en FALSE (si no, se multiplicaría
-  # dos veces) y los importes son bajos. Se quitaron netherite_scrap/nether_star: a x5
-  # peldaños eran una locura. Divino se gatea por PlayerPoints + poder, no por reactivo caro.
-  reagent-scales-with-level: false
-  default-reagent:
-    material: LAPIS_LAZULI
-    amount: 1
-  rarity-reagents:
-    raro:
-      material: LAPIS_LAZULI
-      amount: 2
-    epico:
-      material: AMETHYST_SHARD
-      amount: 2
-    legendario:
-      material: AMETHYST_SHARD
-      amount: 3
-    divino:
-      material: AMETHYST_SHARD
-      amount: 2
+  # (Los reactivos materiales fueron ELIMINADOS por diseño: la mesa consume SOLO
+  #  Experiencia. El riesgo viene del % de éxito, el downgrade y las maldiciones.)
 
 # ─────────────────────────────────────────────
 # TRANSFERENCIA DE ENCANTAMIENTOS (grindstone)
@@ -516,6 +480,8 @@ sounds:
   enchant-success:  { key: block.enchantment_table.use,    volume: 1.0, pitch: 1.2 }
   # Fallo del encantamiento probabilístico (success-chance).
   enchant-fail:     { key: block.fire.extinguish,          volume: 1.0, pitch: 0.8 }
+  # Fallo CON downgrade (el encantamiento bajó un nivel) — más dramático que el fallo normal.
+  enchant-downgrade: { key: entity.item.break,             volume: 1.0, pitch: 0.6 }
   # Transferir y extraer ya NO suenan igual que encantar (antes compartían sonido).
   transfer-success: { key: block.amethyst_block.chime,     volume: 1.0, pitch: 0.8 }
   extract-success:  { key: block.amethyst_block.chime,     volume: 1.0, pitch: 1.4 }
