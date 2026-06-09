@@ -26,6 +26,16 @@ por GUIs custom estilo Hypixel SkyBlock, con multi-economía, anti-dupe, y "libr
 > sección correspondiente de este `CLAUDE.md` en el mismo trabajo, antes de terminar. Mantenlo
 > conciso (es un resumen, no documentación exhaustiva). Puedes refrescarlo a mano con `/update-summary`.
 
+> **📦 SUBE SIEMPRE A GITHUB AL TERMINAR.** Tras cualquier trabajo (nueva feature, fix, cambio de
+> config/docs), haz commit y push al repo privado como último paso, sin que el autor lo pida:
+> ```
+> git add .
+> git commit -m "descripción concisa del cambio"
+> git push
+> ```
+> El repo es **https://github.com/Scrulius/SuperEnchanter** (privado). Un mensaje de commit claro
+> basta — no hace falta rama ni PR, push directo a `master`.
+
 ---
 
 ## Stack y build
