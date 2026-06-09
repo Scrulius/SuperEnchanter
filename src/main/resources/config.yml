@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 10
+config-version: 11
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -262,6 +262,14 @@ enchanting:
       required-level:
         legendario: 20
         divino: 35
+    # Encantamientos de armadura que suben la XP de Magia. Esto es SOLO para MOSTRAR el
+    # bonus en la cabeza de estadísticas de la mesa; el efecto REAL lo aplica EcoEnchants
+    # vía el efecto skill_xp_multiplier de cada encantamiento. key del encantamiento ->
+    # fracción de bonus (0.15 = +15%). Se apilan multiplicativo (igual que eco). Si añades
+    # más encantamientos de XP, regístralos aquí para que la cabeza muestre el total real.
+    xp-boost-enchants:
+      tunica_de_mago: 0.15
+      sombrero_de_mago: 0.25
 
   # ── Iconos de categoría ──
   # Material del icono de cada categoría (tipo de EcoEnchants) en el primer nivel

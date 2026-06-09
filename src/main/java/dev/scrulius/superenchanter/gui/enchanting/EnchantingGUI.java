@@ -35,6 +35,8 @@ import java.util.Set;
 public final class EnchantingGUI extends AbstractCustomGUI {
 
     // ── Slot constants ──────────────────────────────────────────────────────
+    /** Player-head panel with the viewer's Magia bonuses (only when Magia is active). */
+    private static final int SLOT_STATS = 10;
     private static final int SLOT_INPUT = 19;
     private static final int SLOT_TABLE_DECO = 28;
     /** Decorative label that points at the potentiator slot (only when chance is enabled). */
@@ -136,7 +138,34 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                 .lore(msg.rawList("enchanting.guide-lore"))
                 .build());
 
+        refreshStatsHead();
         clearOfferSlots();
+    }
+
+    /**
+     * Renders (or refreshes) the player-head stats panel summarising every Magia bonus —
+     * level, success/discount/refund, mana and the armor XP boost — in one place, so the
+     * offer icons stay clean (costs/chances already show the bonuses applied). Only shown
+     * when Magia is active; otherwise the slot stays decorative.
+     */
+    private void refreshStatsHead() {
+        final var magia = plugin.getMagiaService();
+        if (magia == null || !magia.isEnabled()) {
+            inventory.setItem(SLOT_STATS, FILLER_PANE);
+            return;
+        }
+        final List<String> lore = msg.formatList("enchant-icons.stats-head-lore", Map.of(
+                "{level}", String.valueOf(magia.level(player)),
+                "{success}", String.valueOf(magia.successBonus(player)),
+                "{discount}", String.valueOf(magia.discountPercent(player)),
+                "{refund}", String.valueOf(magia.refundChance(player)),
+                "{mana}", String.valueOf(magia.manaBonus(player)),
+                "{xp}", String.valueOf(magia.xpBonusPercent(player))));
+        inventory.setItem(SLOT_STATS, new ItemBuilder(Material.PLAYER_HEAD)
+                .name(msg.raw("enchant-icons.stats-head-name"))
+                .lore(lore)
+                .skullOwner(player)
+                .build());
     }
 
     @Override
@@ -410,6 +439,10 @@ public final class EnchantingGUI extends AbstractCustomGUI {
         final double magiaXp = (magiaOn && charged)
                 ? magia.grantXp(player, targetOffer.rarityId(), levelsGained, rollFailed)
                 : 0.0;
+        // The operation may have raised the Magia level (new bonuses) → refresh the panel.
+        if (magiaXp > 0) {
+            refreshStatsHead();
+        }
         final String magiaInfo = magiaXp > 0
                 ? msg.format("enchanting.magia-xp-suffix",
                         Map.of("{xp}", String.valueOf((long) Math.round(magiaXp))))

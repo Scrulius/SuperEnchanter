@@ -360,10 +360,22 @@ enchant-icons:
   available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}"
   available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
   available-lore-reagent: "<#A8B2D1>Reactivo: <#43E97B>{amount}x {item}"
-  # Línea de sub-habilidades de Magia en el icono (solo si Magia está activa): muestra
-  # cuánto éxito/ahorro/reembolso aporta TU nivel de Magia. Vacío si la skill no está.
-  magia-line: "<#C084FC>Magia {level} <#6C7293>· <#43E97B>+{success}%<#6C7293> éxito · <#FFD93D>-{discount}%<#6C7293> coste · <#C084FC>{refund}%<#6C7293> reembolso"
   available-lore-button: "<#FFD93D>▶ <#43E97B>Clic para encantar"
+
+  # ── Cabeza de estadísticas del jugador (panel de bonus de Magia) ──
+  # Solo se muestra si Magia está activa. Reúne TODOS los bonus en un sitio en vez de
+  # repetirlos bajo cada encantamiento. Placeholders: {level} nivel de Magia, {success}
+  # +% éxito, {discount} -% coste, {refund} % reembolso, {mana} maná máx, {xp} +% XP de
+  # Magia por la armadura puesta.
+  stats-head-name: "<gradient:#C084FC:#7C3AED><bold>✦ Tus estadísticas de Magia</bold></gradient>"
+  stats-head-lore:
+    - "<#6C7293>Nivel de <#C084FC>Magia<#6C7293>: <#E8E8FF>{level}"
+    - ""
+    - "<#43E97B>✔ +{success}%<#6C7293> probabilidad de éxito"
+    - "<#FFD93D>✔ -{discount}%<#6C7293> coste de encantar"
+    - "<#C084FC>♻ {refund}%<#6C7293> reembolso al fallar"
+    - "<#5BCEFA>✦ +{mana}<#6C7293> maná máximo"
+    - "<#FF9F45>📖 +{xp}%<#6C7293> XP de Magia <#6C7293>(armadura)"
 
   # Unavailable/locked enchantment (gray dye)
   unavailable-name: "<#FF6B6B>{name}"

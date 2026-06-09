@@ -615,7 +615,8 @@ public final class EnchantingLogic {
             if (requiresReagent(offer.reagent())) {
                 lore.add(msg.format("enchant-icons.available-lore-reagent", reagentPlaceholders(offer.reagent())));
             }
-            appendMagiaLore(lore, player, plugin);
+            // Magia bonuses are no longer listed per-icon (cost/chance already show them applied);
+            // the full breakdown lives in the player stats head (see EnchantingGUI#buildStatsHead).
             lore.add("");
             lore.add(msg.raw("enchant-icons.available-lore-button"));
 
@@ -707,26 +708,6 @@ public final class EnchantingLogic {
                         Map.of("{rarity}", rarityDisplayName(plugin, sealRarityId))));
             }
         }
-    }
-
-    /**
-     * Appends a compact "Magia" sub-ability line to a level-offer icon when the skill
-     * loop is active — surfacing the player's current success bonus, cost discount and
-     * Reembolso Arcano chance at the point of decision. No-op when Magia is inactive.
-     */
-    private static void appendMagiaLore(@NotNull List<String> lore,
-                                        @NotNull Player player,
-                                        @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
-        final var magia = plugin.getMagiaService();
-        if (magia == null || !magia.isEnabled()) {
-            return;
-        }
-        final MessagesConfig msg = plugin.getMessages();
-        lore.add(msg.format("enchant-icons.magia-line", Map.of(
-                "{level}", String.valueOf(magia.level(player)),
-                "{success}", String.valueOf(magia.successBonus(player)),
-                "{discount}", String.valueOf(magia.discountPercent(player)),
-                "{refund}", String.valueOf(magia.refundChance(player)))));
     }
 
     // ── Reagent handling ────────────────────────────────────────────────────

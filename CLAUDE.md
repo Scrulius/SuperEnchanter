@@ -366,11 +366,17 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   coste** de ese peldaño — `CostService.refund` (XP: `setLevel+`; Vault: `deposit`; PP: `give`).
   Suaviza el sumidero del `success-chance`. Feedback: `enchant-fail-refund` (primer peldaño) o
   sufijo `refund-suffix` (`{refund}` en el parcial).
-- **Visibilidad de los bonus**: el icono de nivel muestra `enchant-icons.magia-line`
-  (`🔮 Magia N · +X% éxito · -Y% coste · ♻Z%`) vía `EnchantingLogic.appendMagiaLore`, y el maná en
-  el panel de `/skills` (config de EcoSkills). ⚠️ **Fix**: `appendChanceLore` ahora suma el
-  `successBonus` de Magia al % mostrado — antes el icono enseñaba un % MENOR que el que se tiraba de
-  verdad en `handleLevelClick`. Helpers de display: `MagiaService.discountPercent/refundChance/manaBonus`.
+- **Visibilidad de los bonus = cabeza de estadísticas (NO por icono)**: los bonus de Magia ya NO se
+  listan bajo cada encantamiento (se quitó `appendMagiaLore`/`magia-line`); el coste/probabilidad del
+  icono ya salen CON los bonus aplicados (`effectiveCost`+`applyDiscount`, y `appendChanceLore` suma el
+  `successBonus`). Todos los bonus se reúnen en una **cabeza de jugador** (`SLOT_STATS=10`, con la skin
+  del viewer vía `ItemBuilder.skullOwner`) arriba del input: nivel de Magia, +éxito, −coste, reembolso,
+  maná y **+% XP de Magia de la armadura puesta** (`enchant-icons.stats-head-*`). Solo aparece si Magia
+  está activa; se refresca en `fillDecoration` y tras encantar (puede subir de nivel). Helpers de
+  display: `MagiaService.discountPercent/refundChance/manaBonus/xpBonusPercent`. El **XP de armadura**
+  (`xpBonusPercent`) lee la armadura puesta y cruza las keys con `enchanting.magia.xp-boost-enchants`
+  (mapa key→fracción, SOLO para mostrar; el efecto real lo aplica eco vía `skill_xp_multiplier`),
+  apilando multiplicativo igual que eco. El maná también sale en el panel de `/skills` (config EcoSkills).
 - **Placeholders (`integration/SuperEnchanterPlaceholders`)**: expansion de PlaceholderAPI
   `superenchanter` (softdepend + compileOnly al jar de PAPI; solo se registra/carga si PAPI está,
   guarda en `onEnable`). Expone los bonus de Magia con valores REALES para configs ajenas (la
@@ -459,7 +465,7 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 10`. Corre en cada reload.
+  conserva comentarios. `config-version: 11`. Corre en cada reload.
 - **`enchanting.rarity-cost-type`** (mapa rareza→moneda): override del `cost-type` global por rareza
   (las que no aparezcan heredan el global). Se usa para que **Divino se cobre en PLAYER_POINTS**
   (premium) mientras el resto sigue en XP. Lo resuelve `PluginConfig.getEnchantingCostType(rarityId)`

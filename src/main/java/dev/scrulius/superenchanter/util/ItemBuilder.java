@@ -180,6 +180,20 @@ public final class ItemBuilder {
     }
 
     /**
+     * Sets the skin of a player-head item. No-op on non-head materials (the meta
+     * won't be a {@link org.bukkit.inventory.meta.SkullMeta}).
+     *
+     * @param owner the player whose skin to show
+     * @return this builder
+     */
+    public @NotNull ItemBuilder skullOwner(@NotNull org.bukkit.OfflinePlayer owner) {
+        if (meta instanceof org.bukkit.inventory.meta.SkullMeta skull) {
+            skull.setOwningPlayer(owner);
+        }
+        return this;
+    }
+
+    /**
      * Builds and returns the final {@link ItemStack}.
      *
      * @return the constructed item stack

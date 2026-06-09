@@ -6,7 +6,9 @@ import dev.scrulius.supercore.api.SuperCore;
 import dev.scrulius.superenchanter.SuperEnchanterPlugin;
 import dev.scrulius.superenchanter.economy.Cost;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +46,8 @@ public final class MagiaService {
     private int refundMax = 30;
     private boolean gatingEnabled = false;
     private final Map<String, Integer> gateLevels = new HashMap<>();
+    /** Armor-enchant key → XP bonus fraction (for DISPLAY; eco applies the real effect). */
+    private final Map<String, Double> xpBoostEnchants = new HashMap<>();
 
     public MagiaService(@NotNull SuperEnchanterPlugin plugin) {
         this.plugin = plugin;
@@ -83,6 +87,14 @@ public final class MagiaService {
             if (gateSec != null) {
                 for (String r : gateSec.getKeys(false)) {
                     gateLevels.put(r.toLowerCase(Locale.ROOT), gateSec.getInt(r));
+                }
+            }
+
+            xpBoostEnchants.clear();
+            ConfigurationSection boostSec = sec.getConfigurationSection("xp-boost-enchants");
+            if (boostSec != null) {
+                for (String k : boostSec.getKeys(false)) {
+                    xpBoostEnchants.put(k.toLowerCase(Locale.ROOT), boostSec.getDouble(k));
                 }
             }
         }
@@ -152,6 +164,26 @@ public final class MagiaService {
      */
     public int manaBonus(@NotNull Player player) {
         return enabled ? level(player) : 0;
+    }
+
+    /**
+     * The combined Magia-XP bonus (percentage points) from the player's currently worn
+     * armor, e.g. {@code 44} when wearing both mage pieces (1.15 × 1.25 → +43.75%).
+     * For DISPLAY in the stats head — the real multiplication is applied by EcoEnchants'
+     * {@code skill_xp_multiplier} effect in the XP-gain event. Stacks multiplicatively to
+     * mirror eco. 0 when inactive or no boosting armor is worn.
+     */
+    public int xpBonusPercent(@NotNull Player player) {
+        if (!enabled || xpBoostEnchants.isEmpty()) return 0;
+        double factor = 1.0;
+        for (ItemStack piece : player.getInventory().getArmorContents()) {
+            if (piece == null || piece.getType().isAir()) continue;
+            for (Enchantment e : piece.getEnchantments().keySet()) {
+                Double bonus = xpBoostEnchants.get(e.getKey().getKey().toLowerCase(Locale.ROOT));
+                if (bonus != null) factor *= (1.0 + bonus);
+            }
+        }
+        return (int) Math.round((factor - 1.0) * 100.0);
     }
 
     /** Carril 5 — gating. True if the player may enchant this rarity (always true when off). */
