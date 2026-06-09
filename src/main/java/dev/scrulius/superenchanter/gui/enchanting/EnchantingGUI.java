@@ -38,14 +38,16 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     /** Player-head panel with the viewer's Magia bonuses (top-centre; only when Magia is active). */
     private static final int SLOT_STATS = 4;
     private static final int SLOT_INPUT = 19;
-    private static final int SLOT_TABLE_DECO = 28;
+    /** Enchanting-table icon, sitting to the LEFT of the input (mirrors the seal label/slot). */
+    private static final int SLOT_TABLE_DECO = 18;
     /** Decorative label that points at the potentiator slot (only when chance is enabled). */
     private static final int SLOT_BOOSTER_LABEL = 36;
     /** Input slot for an optional MythicMobs potentiator (only when chance is enabled). */
     private static final int SLOT_BOOSTER = 37;
     private static final int SLOT_POWER = 48;
     private static final int SLOT_CLOSE = 49; // also acts as back button
-    private static final int SLOT_GUIDE = 50;
+    /** Help/description book, to the RIGHT of the enchantment grid ("aquí aparecen..."). */
+    private static final int SLOT_GUIDE = 26;
     private static final int SLOT_PREV_PAGE = 46;
     private static final int SLOT_NEXT_PAGE = 52;
 

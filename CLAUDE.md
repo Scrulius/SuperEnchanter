@@ -369,8 +369,8 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
 - **Visibilidad de los bonus = cabeza de estadísticas (NO por icono)**: los bonus de Magia ya NO se
   listan bajo cada encantamiento (se quitó `appendMagiaLore`/`magia-line`); el coste/probabilidad del
   icono ya salen CON los bonus aplicados (`effectiveCost`+`applyDiscount`, y `appendChanceLore` suma el
-  `successBonus`). Todos los bonus se reúnen en una **cabeza de jugador** (`SLOT_STATS=10`, con la skin
-  del viewer vía `ItemBuilder.skullOwner`) arriba del input: nivel de Magia, +éxito, −coste, reembolso,
+  `successBonus`). Todos los bonus se reúnen en una **cabeza de jugador** (`SLOT_STATS=4`, centro arriba,
+  con la skin del viewer vía `ItemBuilder.skullOwner`): nivel de Magia, +éxito, −coste, reembolso,
   maná y **+% XP de Magia de la armadura puesta** (`enchant-icons.stats-head-*`). Solo aparece si Magia
   está activa; se refresca en `fillDecoration` y tras encantar (puede subir de nivel). Helpers de
   display: `MagiaService.discountPercent/refundChance/manaBonus/xpBonusPercent`. El **+% XP de Magia**
