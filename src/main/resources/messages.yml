@@ -97,10 +97,10 @@ anvil:
 # ENCHANTING TABLE GUI
 # ─────────────────────────────────────────────
 enchanting:
-  gui-title: "<gradient:#C084FC:#7C3AED><bold>✦ Mesa de Encantamientos ✦</bold></gradient>"
+  gui-title: "<gradient:#C084FC:#7C3AED><bold>Mesa de Encantamientos</bold></gradient>"
 
-  # Table decoration icon
-  table-deco-name: "<gradient:#C084FC:#7C3AED><bold>✦ Mesa de Encantamientos</bold></gradient>"
+  # Table decoration icon — etiqueta del slot de input (flecha ➜ hacia él, como el sello).
+  table-deco-name: "<gradient:#C084FC:#7C3AED><bold>Mesa de Encantamientos ➜</bold></gradient>"
   table-deco-lore:
     - "<#A8B2D1>Coloca un ítem en el slot"
     - "<#A8B2D1>de la derecha para ver sus"
