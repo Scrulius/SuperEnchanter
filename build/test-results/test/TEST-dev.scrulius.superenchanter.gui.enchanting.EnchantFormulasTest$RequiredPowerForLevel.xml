@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="requiredPowerForLevel" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.001">
-  <properties/>
-  <testcase name="level 1 is floor + one step" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$RequiredPowerForLevel" time="0.001"/>
-  <testcase name="capped at maxPower" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$RequiredPowerForLevel" time="0.0"/>
-  <testcase name="floor plus per-level step" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$RequiredPowerForLevel" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

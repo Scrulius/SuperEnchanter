@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="xpCost" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.001">
-  <properties/>
-  <testcase name="zero levels yields just the base" classname="dev.scrulius.superenchanter.gui.anvil.AnvilFormulasTest$XpCost" time="0.0"/>
-  <testcase name="base plus per-level term" classname="dev.scrulius.superenchanter.gui.anvil.AnvilFormulasTest$XpCost" time="0.001"/>
-  <testcase name="clamped to the max cost" classname="dev.scrulius.superenchanter.gui.anvil.AnvilFormulasTest$XpCost" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

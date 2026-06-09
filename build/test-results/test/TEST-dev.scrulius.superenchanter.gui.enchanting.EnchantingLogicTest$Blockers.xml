@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="new-enchant blockers (precedence: required &gt; conflict &gt; type-limit)" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.002">
-  <properties/>
-  <testcase name="missing required beats conflict and type-limit" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Blockers" time="0.001"/>
-  <testcase name="conflict beats type-limit when nothing required is missing" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Blockers" time="0.0"/>
-  <testcase name="type-limit only when no missing and no conflict" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Blockers" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
