@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="maxed" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.001">
+  <properties/>
+  <testcase name="owned above max (defensive) is MAXED" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Maxed" time="0.0"/>
+  <testcase name="single-level enchant already owned is MAXED" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Maxed" time="0.0"/>
+  <testcase name="owned at max level is MAXED" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Maxed" time="0.001"/>
+  <testcase name="MAXED wins over any new-enchant blocker flags" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantingLogicTest$Maxed" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

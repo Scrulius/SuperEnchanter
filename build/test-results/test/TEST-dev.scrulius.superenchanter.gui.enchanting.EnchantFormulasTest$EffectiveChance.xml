@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="effectiveChance" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.001">
+  <properties/>
+  <testcase name="base plus booster, no clamping needed" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$EffectiveChance" time="0.0"/>
+  <testcase name="a guarantee orb (+100) always reaches the cap" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$EffectiveChance" time="0.0"/>
+  <testcase name="never below 0" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$EffectiveChance" time="0.0"/>
+  <testcase name="no booster leaves the base untouched" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$EffectiveChance" time="0.0"/>
+  <testcase name="sum is clamped at 100" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$EffectiveChance" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

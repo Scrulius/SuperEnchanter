@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="CostType.fromString" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.037">
+  <properties/>
+  <testcase name="null/blank -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.006"/>
+  <testcase name="null/blank -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="null/blank -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.001"/>
+  <testcase name="unknown &quot;&quot;gold&quot;&quot; -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="unknown &quot;&quot;money&quot;&quot; -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="unknown &quot;&quot;PLAYERPOINTS&quot;&quot; -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.001"/>
+  <testcase name="unknown &quot;&quot;123&quot;&quot; -&gt; XP" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.001"/>
+  <testcase name="&quot;&quot;XP&quot;&quot; -&gt; &quot;XP&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.006"/>
+  <testcase name="&quot;&quot;xp&quot;&quot; -&gt; &quot;XP&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.001"/>
+  <testcase name="&quot;&quot;Xp&quot;&quot; -&gt; &quot;XP&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="&quot;&quot;VAULT&quot;&quot; -&gt; &quot;VAULT&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="&quot;&quot;vault&quot;&quot; -&gt; &quot;VAULT&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="&quot;&quot;PLAYER_POINTS&quot;&quot; -&gt; &quot;PLAYER_POINTS&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.0"/>
+  <testcase name="&quot;&quot;player_points&quot;&quot; -&gt; &quot;PLAYER_POINTS&quot;" classname="dev.scrulius.superenchanter.economy.CostTest$FromString" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

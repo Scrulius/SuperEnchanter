@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="toRoman" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.009">
+  <properties/>
+  <testcase name="zero is not a Roman numeral" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;1&quot; -&gt; &quot;I&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.001"/>
+  <testcase name="&quot;2&quot; -&gt; &quot;II&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;3&quot; -&gt; &quot;III&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;4&quot; -&gt; &quot;IV&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;5&quot; -&gt; &quot;V&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;6&quot; -&gt; &quot;VI&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;7&quot; -&gt; &quot;VII&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;8&quot; -&gt; &quot;VIII&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="&quot;9&quot; -&gt; &quot;IX&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.001"/>
+  <testcase name="&quot;10&quot; -&gt; &quot;X&quot;" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="0 falls back to decimal" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.001"/>
+  <testcase name="-1 falls back to decimal" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="11 falls back to decimal" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <testcase name="42 falls back to decimal" classname="dev.scrulius.superenchanter.gui.enchanting.EnchantFormulasTest$ToRoman" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

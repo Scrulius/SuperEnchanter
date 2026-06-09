@@ -1,0 +1,53 @@
+name: SuperEnchanter
+version: '1.0.0'
+main: dev.scrulius.superenchanter.SuperEnchanterPlugin
+api-version: '26.1.2'
+author: Scrulius
+website: https://github.com/Scrulius
+description: >
+  Custom Anvil & Enchanting Table GUIs inspired by Hypixel SkyBlock.
+  Replaces vanilla anvil and enchanting table interactions with rich,
+  anti-dupe protected custom interfaces.
+
+# EcoEnchants is the core provider and is REQUIRED. It is a softdepend (not depend)
+# on purpose: that way this plugin always loads and can run its own fail-safe check
+# (see config 'fail-safe') — shutting the server down on a missing dependency rather
+# than letting the server boot without enchanting working.
+softdepend:
+  - eco
+  - EcoEnchants
+  - Talismans
+  - EcoSkills
+  - Vault
+  - PlayerPoints
+  - MythicMobs
+  # SuperCore: puente a EcoSkills para la skill Magia. Softdepend (no depend) para
+  # que SuperEnchanter cargue aun sin él; si está, debe cargar ANTES (orden correcto).
+  - SuperCore
+  # PlaceholderAPI: para registrar los placeholders %superenchanter_magia_*%.
+  - PlaceholderAPI
+
+# Ensure correct load order when soft dependencies are present
+load: POSTWORLD
+
+permissions:
+  superenchanter.anvil.use:
+    description: Allows using the custom anvil GUI
+    default: true
+  superenchanter.enchant.use:
+    description: Allows using the custom enchanting table GUI
+    default: true
+  superenchanter.transfer.use:
+    description: Allows using the enchantment-transfer GUI (grindstone)
+    default: true
+  superenchanter.reload:
+    description: Allows reloading the plugin configuration
+    default: op
+  superenchanter.admin:
+    description: Allows the admin subcommands (/se give, book, bookshelf, audit)
+    default: op
+  superenchanter.cost.bypass:
+    description: Operations (anvil/table/transfer) cost nothing for this player
+    default: false
+  # Note: superenchanter.cost.discount.<n> (n = 1..100) grants an N% discount;
+  # it is checked dynamically, so it is not declared here.

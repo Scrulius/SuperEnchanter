@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.scrulius.superenchanter.economy.CostTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.0">
+  <properties/>
+  <testcase name="a null type normalises to XP" classname="dev.scrulius.superenchanter.economy.CostTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

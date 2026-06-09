@@ -1,0 +1,447 @@
+# =============================================================
+# SuperEnchanter - Messages Configuration
+# Author: Scrulius (GitHub)
+# =============================================================
+# All text uses MiniMessage format with HEX colors.
+# Placeholders use {placeholder} syntax.
+# =============================================================
+
+# ─────────────────────────────────────────────
+# ANVIL GUI
+# ─────────────────────────────────────────────
+anvil:
+  gui-title: "<gradient:#FFB347:#FF8C00><bold>Yunque</bold></gradient>"
+
+  # Info icon (slot 13)
+  info-name: "<gradient:#FFB347:#FF8C00><bold>Información</bold></gradient>"
+  info-lore:
+    - "<#A8B2D1>Coloca un ítem en la izquierda"
+    - "<#A8B2D1>y un libro o ítem con encantamientos"
+    - "<#A8B2D1>en la derecha para combinarlos."
+    - ""
+    - "<#FFD93D>✦ <#A8B2D1>Los encantamientos compatibles"
+    - "<#A8B2D1>  se fusionarán automáticamente."
+    - "<#FFD93D>✦ <#A8B2D1>Si ambos tienen el mismo nivel,"
+    - "<#A8B2D1>  se subirá un nivel (hasta el máx.)."
+    - ""
+    - "<#FFB347>Coste <#6C7293>» <#A8B2D1>Depende de los niveles añadidos."
+
+  # Close button
+  close-name: "<#FF6B6B><bold>Cerrar</bold>"
+  close-lore: "<#6C7293>Clic para cerrar"
+
+  # Input labels (sit above each slot)
+  item-label-name: "<gradient:#64DFDF:#38D9A9><bold>⬇ Tu objeto</bold></gradient>"
+  item-label-lore:
+    - "<#A8B2D1>Coloca aquí el objeto"
+    - "<#A8B2D1>que quieres mejorar."
+  sacrifice-label-name: "<gradient:#FFB347:#FF8C00><bold>⬇ Sacrificio</bold></gradient>"
+  sacrifice-label-lore:
+    - "<#A8B2D1>Un libro encantado u otro"
+    - "<#A8B2D1>objeto con encantamientos."
+    - "<#A8B2D1>Sus encantamientos se fusionan"
+    - "<#A8B2D1>en tu objeto."
+    - ""
+    - "<#FFD93D>⚠ <#FF6B6B>Se consume al forjar."
+
+  # Result preview placeholder (empty / incomplete)
+  empty-result-name: "<#6C7293><bold>Resultado</bold>"
+  empty-result-lore:
+    - "<#A8B2D1>Coloca un objeto y un sacrificio"
+    - "<#A8B2D1>compatibles para ver el resultado."
+
+  # Dedicated forge button
+  forge-ready-name: "<gradient:#43E97B:#38D9A9><bold>▶ Forjar</bold></gradient>"
+  forge-ready-lore:
+    - "<#A8B2D1>Coste: <#FFB347>{cost}"
+    - ""
+    - "<#FFD93D>▶ <#43E97B>Clic para forjar"
+  forge-disabled-name: "<#6C7293><bold>Forjar</bold>"
+  forge-disabled-lore:
+    - "<#6C7293>Coloca un objeto y un sacrificio"
+    - "<#6C7293>compatibles para poder forjar."
+
+  # Action bar messages
+  cooldown: "<#FF6B6B>¡Espera un momento antes de volver a forjar!"
+  forge-success: "<#43E97B>¡Forjado exitosamente! <#A8B2D1>(<#FFB347>{cost}<#A8B2D1>)"
+  # Sello Purificador (quitar maldiciones)
+  purify-success: "<#5EF1FF>✦ <#E8E8FF>Maldiciones eliminadas <#A8B2D1>(<#5EF1FF>{count}<#A8B2D1>)"
+  purify-header: "<#5EF1FF><bold>Se eliminarán las maldiciones:</bold>"
+  purify-entry: "<#FF4D4D> ☠ {enchantment}"
+  purify-free: "<#43E97B>Gratis"
+
+  # Insufficient funds
+  insufficient-xp: "<#FF6B6B>¡No tienes suficiente experiencia! <#A8B2D1>Necesitas <#FFB347>{cost}"
+  insufficient-money: "<#FF6B6B>¡No tienes suficiente dinero! <#A8B2D1>Necesitas <#FFB347>{cost}"
+  insufficient-tokens: "<#FF6B6B>¡No tienes suficientes tokens! <#A8B2D1>Necesitas <#FFB347>{cost}"
+
+  # Result preview lore
+  result-cost: "<#A8B2D1>Coste: <#FFB347>{cost}"
+  result-conflicts-header: "<#FF6B6B><bold>Conflictos:</bold>"
+  result-conflict-entry: "<#FF6B6B> ✘ {enchantment}"
+  result-forge-button: "<#FFD93D>▶ Clic para forjar"
+
+  # Full incompatibility (barrier icon)
+  incompatible-name: "<#FF6B6B><bold>Incompatible</bold>"
+  incompatible-lore-header: "<#FF6B6B>Los siguientes encantamientos"
+  incompatible-lore-subheader: "<#FF6B6B>son incompatibles:"
+
+  # Distinto ítem (mismo material base pero no es el mismo objeto)
+  different-items-name: "<#FF6B6B><bold>No combinable</bold>"
+  different-items-lore:
+    - "<#A8B2D1>Solo puedes combinar un objeto con"
+    - "<#A8B2D1>un <#E8E8FF>libro encantado <#A8B2D1>o con OTRO"
+    - "<#A8B2D1>objeto <#E8E8FF>idéntico<#A8B2D1>."
+
+# ─────────────────────────────────────────────
+# ENCHANTING TABLE GUI
+# ─────────────────────────────────────────────
+enchanting:
+  gui-title: "<gradient:#C084FC:#7C3AED><bold>✦ Mesa de Encantamientos ✦</bold></gradient>"
+
+  # Table decoration icon
+  table-deco-name: "<gradient:#C084FC:#A855F7><bold>Mesa de Encantamientos</bold></gradient>"
+  table-deco-lore:
+    - "<#A8B2D1>Coloca un ítem en el slot"
+    - "<#A8B2D1>de arriba para ver los"
+    - "<#A8B2D1>encantamientos disponibles."
+
+  # Close button
+  close-name: "<#FF6B6B><bold>Cerrar"
+
+  # Back button
+  back-name: "<#43E97B>◀ Atrás"
+  back-lore:
+    - "<#6C7293>Clic para volver a la lista"
+
+  # Category icons (tier 1). El color lo aporta {name} (ver category-names abajo),
+  # que ya trae el color del tier/categoría; aquí solo aplicamos negrita.
+  category-name: "<bold>{name}</bold>"
+  category-lore:
+    - "<#A8B2D1>{count} encantamientos disponibles"
+    - ""
+    - "<#FFD93D>▶ <#43E97B>Clic para ver"
+
+  # Guide book — explicación completa (líneas cortas para que no se desborden).
+  guide-name: "<gradient:#43E97B:#38D9A9><bold>📖 Cómo encantar</bold></gradient>"
+  guide-lore:
+    - "<#C084FC><bold>1 · Pasos</bold>"
+    - "<#A8B2D1>Pon un ítem en el slot."
+    - "<#A8B2D1>Elige categoría, luego el"
+    - "<#A8B2D1>encantamiento, luego un nivel."
+    - ""
+    - "<#43E97B><bold>2 · Subida por peldaños</bold>"
+    - "<#A8B2D1>Subes nivel a nivel. Si fallas"
+    - "<#A8B2D1>uno, <#E8E8FF>conservas lo ya logrado<#A8B2D1>"
+    - "<#A8B2D1>y solo pierdes ese peldaño."
+    - "<#A8B2D1>Cada peldaño gasta XP y reactivo"
+    - "<#A8B2D1>aunque falle (ese es el coste)."
+    - ""
+    - "<#FFD93D><bold>3 · Probabilidad y sellos</bold>"
+    - "<#A8B2D1>Las rarezas altas pueden fallar."
+    - "<#A8B2D1>Mete un <#C084FC>Sello<#A8B2D1> en su slot para"
+    - "<#A8B2D1>garantizar TODO el ascenso."
+    - ""
+    - "<#5EF1FF><bold>4 · Poder de librería</bold>"
+    - "<#A8B2D1>Rarezas altas exigen rodear la"
+    - "<#A8B2D1>mesa de librerías encantadas."
+    - ""
+    - "<#FF4D4D><bold>5 · Maldiciones</bold>"
+    - "<#A8B2D1>Riesgo bajo de maldecir el ítem."
+    - "<#A8B2D1>Se cura en el <#E8E8FF>yunque<#A8B2D1> con un"
+    - "<#A8B2D1>Sello Purificador."
+
+  # Action bar messages
+  maxed-actionbar: "<#FF6B6B>✘ Ya tiene el nivel máximo"
+  cooldown-actionbar: "<#FF6B6B>✘ Espera un momento..."
+  enchant-success: "<#43E97B>✔ <#E8E8FF>{enchantment} <#43E97B>aplicado con éxito{magia}"
+  # Ascenso por pasos detenido en un nivel intermedio (falló el siguiente peldaño o sin recursos).
+  enchant-partial: "<#FFD93D>➤ <#E8E8FF>{enchantment} <#FFD93D>— falló al subir a {next}, conservas lo logrado{refund}{magia}"
+  enchant-blocked: "<#FF6B6B>✘ <#A8B2D1>Ese encantamiento no se puede aplicar ahora mismo."
+  # Fallo del encantamiento probabilístico (el coste se consume igual).
+  enchant-fail: "<#FF6B6B>✘ <#E8E8FF>{enchantment} <#FF6B6B>falló <#6C7293>(prob. {chance}%) — perdiste el coste.{magia}"
+  # Fallo PERO la sub-habilidad Reembolso Arcano (Magia) te devolvió el coste.
+  enchant-fail-refund: "<#E8E8FF>{enchantment} <#FF6B6B>falló <#6C7293>(prob. {chance}%) <#C084FC>— Reembolso Arcano: recuperas {cost}.{magia}"
+  # Sufijo de reembolso anexado al feedback parcial ({refund}). Vacío si no hubo reembolso.
+  refund-suffix: " <#C084FC>+{cost} reembolsado"
+  # El encantamiento entró pero el ítem se MALDIJO (purifícalo en el yunque con un Sello Purificador).
+  cursed: "<#8E0E0E>☠ <#E8E8FF>{enchantment} <#43E97B>aplicado <#6C7293>— ¡maldecido con <#FF4D4D>{curse}<#6C7293>! Púrificalo en el yunque con un Sello Purificador.{magia}"
+  # Sufijo de XP de Magia que se anexa al feedback de encantar ({magia}). Vacío si no se ganó XP.
+  magia-xp-suffix: " <#6C7293>(+<#C084FC>{xp}<#6C7293> XP de Magia)"
+  # Gating de Magia (carril 5, OFF por defecto): rareza bloqueada hasta cierto nivel de Magia.
+  magia-locked: "<#FF6B6B>✘ <#A8B2D1>Necesitas <#C084FC>Magia nivel {level}<#A8B2D1> para encantar esta rareza."
+
+  # Etiqueta del slot de POTENCIADOR (solo aparece con success-chance activo).
+  booster-label-name: "<gradient:#C084FC:#7C3AED><bold>Sello ➜</bold></gradient>"
+  booster-label-lore:
+    - "<#A8B2D1>Mete a la derecha un <#C084FC>Sello<#A8B2D1> de"
+    - "<#A8B2D1>rareza para garantizar ese encantamiento."
+    - ""
+    - "<#FFD93D>✦ <#A8B2D1>Solo aplica a su rareza."
+    - "<#FFD93D>✦ <#A8B2D1>Se consume al usarlo."
+
+  # Aviso al intentar construir contra una librería encantada sin agacharse.
+  library-sneak-build: "<#FFD93D>✦ <#A8B2D1>Agáchate <#6C7293>(Shift)<#A8B2D1> para construir contra la librería."
+
+  # Cost / Power / Reagent checks (action bar). {cost} y {balance} ya vienen
+  # formateados según la moneda (enchanting.cost-type): "39 XP", "$1,500", "25 Tokens".
+  not-enough-xp: "<#FF6B6B>✘ <#A8B2D1>¡No tienes suficiente! Necesitas <#FFB347>{cost}<#A8B2D1> (tienes <#FFB347>{balance}<#A8B2D1>)."
+  not-enough-power: "<#FF6B6B>✘ <#A8B2D1>¡Necesitas más <#C084FC>Bookshelf Power<#A8B2D1>! <#FFB347>{current}<#6C7293>/<#FFB347>{required}"
+  not-enough-reagent: "<#FF6B6B>✘ <#A8B2D1>Te falta el reactivo: <#FFB347>{amount}x {item}<#A8B2D1>."
+
+  # Pagination
+  prev-page-name: "<#43E97B>◀ Página anterior"
+  prev-page-lore: "<#A8B2D1>Página {current}/{total}"
+  next-page-name: "<#43E97B>Siguiente página ▶"
+  next-page-lore: "<#A8B2D1>Página {current}/{total}"
+
+  # Bookshelf power icon. {current}=total, {vanilla}=estanterías normales (con tope),
+  # {library}=librerías encantadas, {max}=poder máximo.
+  power-name: "<gradient:#64DFDF:#38D9A9><bold>Poder de Estantería</bold></gradient>"
+  power-lore:
+    - "<#A8B2D1>Poder: <#E8E8FF>{current}<#6C7293>/{max}"
+    - ""
+    - "<#6C7293>• <#A8B2D1>Estanterías: <#E8E8FF>{vanilla}"
+    - "<#6C7293>• <#C084FC>Librerías encantadas: <#E8E8FF>{library}"
+    - ""
+    - "<#A8B2D1>Las estanterías normales topan pronto:"
+    - "<#A8B2D1>los encantamientos <#C084FC>top<#A8B2D1> exigen"
+    - "<#A8B2D1>colocar <#C084FC>librerías encantadas<#A8B2D1>."
+
+# ─────────────────────────────────────────────
+# ENCHANTMENT TRANSFER GUI (grindstone)
+# ─────────────────────────────────────────────
+transfer:
+  gui-title: "<gradient:#C084FC:#7C3AED><bold>✦ Transferencia de Encantamientos ✦</bold></gradient>"
+
+  # ── Zona DONANTE (izquierda, rojo = se consume) ──
+  donor-name: "<gradient:#FF6B6B:#FF8C00><bold>⬇ Donante</bold></gradient>"
+  donor-lore:
+    - "<#A8B2D1>Coloca aquí el objeto del que"
+    - "<#A8B2D1>quieres sacar un encantamiento."
+    - ""
+    - "<#FFD93D>⚠ <#FF6B6B>Se consume por completo."
+
+  # ── Zona DESTINO (derecha, verde = recibe) ──
+  target-name: "<gradient:#43E97B:#38D9A9><bold>⬇ Destino</bold></gradient>"
+  target-lore:
+    - "<#A8B2D1>Coloca aquí el objeto que"
+    - "<#A8B2D1>recibirá los encantamientos."
+    - ""
+    - "<#43E97B>✔ <#A8B2D1>Conserva lo que ya tiene."
+    - "<#C084FC>📖 <#A8B2D1>O un <#C084FC>libro<#A8B2D1> para extraer."
+
+  # Hint en el centro de la lista cuando aún no hay nada.
+  list-empty-name: "<#C084FC><bold>Sin encantamientos</bold>"
+  list-empty-lore:
+    - "<#A8B2D1>Pon un <#FF6B6B>donante<#A8B2D1> con encantamientos"
+    - "<#A8B2D1>y elige los que quieras llevarte."
+    - ""
+    - "<#43E97B>▸ <#A8B2D1>Destino = objeto: transfieres."
+    - "<#C084FC>▸ <#A8B2D1>Destino = libro: extraes a libro."
+
+  # Info / close.
+  info-name: "<gradient:#C084FC:#7C3AED><bold>¿Cómo funciona?</bold></gradient>"
+  info-lore:
+    - "<#A8B2D1>Saca <#C084FC>un<#A8B2D1> encantamiento de un objeto"
+    - "<#A8B2D1>donante (que <#FF6B6B>se consume<#A8B2D1>):"
+    - ""
+    - "<#43E97B>▸ Con destino<#A8B2D1> → lo <#43E97B>transfieres<#A8B2D1> a ese objeto."
+    - "<#C084FC>▸ Sin destino<#A8B2D1> → lo <#C084FC>extraes a un libro<#A8B2D1>."
+    - ""
+    - "<#A8B2D1>Elige un encantamiento y pulsa el botón."
+    - "<#6C7293>(Al transferir, el destino debe poder"
+    - "<#6C7293>llevarlo — reglas de la mesa.)"
+  close-name: "<#FF6B6B><bold>Cerrar</bold>"
+  close-lore: "<#6C7293>Clic para cerrar"
+
+  # Iconos de la lista de encantamientos transferibles.
+  offer-name: "<#43E97B><bold>{name} {level}</bold>"
+  offer-level: "<#6C7293>✦ <#A8B2D1>Nivel: <#FFB347>{donor}<#6C7293> · destino <#E8E8FF>{target}<#6C7293> ➜ <#43E97B>{result}"
+  # Modo extracción (sin destino): solo el nivel que sacas.
+  offer-extract-level: "<#6C7293>✦ <#A8B2D1>Nivel: <#43E97B>{result}"
+  offer-cost-ok: "<#6C7293>✦ <#A8B2D1>Coste: <#43E97B>{cost}"
+  offer-cost-fail: "<#6C7293>✦ <#A8B2D1>Coste: <#FF6B6B>{cost} <#6C7293>(tienes {balance})"
+  offer-select: "<#FFD93D>▶ <#43E97B>Clic para seleccionar"
+  offer-selected: "<#FFD93D>✔ <#43E97B>SELECCIONADO <#6C7293>(clic para quitar)"
+
+  # Iconos bloqueados (gris) — con el motivo.
+  offer-blocked-name: "<#6C7293><bold><st>{name} {level}</st></bold>"
+  blocked-conflict: "<#FF6B6B>✘ Conflicto con: <#A8B2D1>{enchantments}"
+  blocked-required: "<#FF6B6B>✘ El destino requiere antes: <#A8B2D1>{enchantments}"
+  blocked-type-limit: "<#FF6B6B>✘ Límite de esa categoría alcanzado en el destino"
+  blocked-already-owned: "<#FF6B6B>✘ El destino ya tiene ese nivel o uno superior"
+  blocked-not-applicable: "<#FF6B6B>✘ No se puede aplicar a este objeto"
+
+  # Botón de transferir.
+  button-ready-name: "<gradient:#43E97B:#38D9A9><bold>▶ Transferir</bold></gradient>"
+  button-ready-lore:
+    - "<#A8B2D1>Mover <#43E97B>{count}<#A8B2D1> encantamiento(s) al destino."
+    - "<#A8B2D1>Coste total: <#FFB347>{cost}"
+    - ""
+    - "<#FFD93D>⚠ <#FF6B6B>El donante (y lo no elegido) se destruye."
+    - "<#FFD93D>▶ <#43E97B>Clic para transferir"
+  button-disabled-name: "<#6C7293><bold>Transferir</bold>"
+  button-disabled-lore:
+    - "<#6C7293>Selecciona uno o varios"
+    - "<#6C7293>encantamientos de la lista."
+
+  # Botón de extraer a libro (modo sin destino).
+  extract-button-ready-name: "<gradient:#C084FC:#7C3AED><bold>▶ Extraer a libro</bold></gradient>"
+  extract-button-ready-lore:
+    - "<#A8B2D1>Sacar <#43E97B>{count}<#A8B2D1> encantamiento(s) a un libro."
+    - "<#A8B2D1>Coste total: <#FFB347>{cost}"
+    - ""
+    - "<#FFD93D>⚠ <#FF6B6B>El donante (y lo no elegido) se destruye."
+    - "<#FFD93D>▶ <#43E97B>Clic para extraer"
+
+  # Action bars.
+  cooldown: "<#FF6B6B>¡Espera un momento antes de volver a transferir!"
+  select-first: "<#FF6B6B>✘ <#A8B2D1>Selecciona al menos un encantamiento."
+  cannot-select: "<#FF6B6B>✘ <#A8B2D1>Ese encantamiento no se puede transferir."
+  success: "<#43E97B>✔ <#E8E8FF>{count} <#43E97B>encantamiento(s) transferido(s) al destino"
+  extract-success: "<#43E97B>✔ <#E8E8FF>{count} <#43E97B>encantamiento(s) extraído(s) a un libro"
+
+  # Fondos insuficientes ({cost} y {balance} ya formateados por moneda).
+  insufficient-xp: "<#FF6B6B>✘ <#A8B2D1>No tienes suficiente XP. Necesitas <#FFB347>{cost}<#A8B2D1> (tienes {balance})."
+  insufficient-money: "<#FF6B6B>✘ <#A8B2D1>No tienes suficiente dinero. Necesitas <#FFB347>{cost}<#A8B2D1> (tienes {balance})."
+  insufficient-tokens: "<#FF6B6B>✘ <#A8B2D1>No tienes suficientes tokens. Necesitas <#FFB347>{cost}<#A8B2D1> (tienes {balance})."
+
+# ─────────────────────────────────────────────
+# ENCHANTMENT OFFER ICONS
+# ─────────────────────────────────────────────
+enchant-icons:
+  # Maxed enchantment (gold, glowing book)
+  maxed-name: "<gradient:#FFB347:#FF8C00><bold>{name}</bold></gradient>"
+  maxed-lore:
+    - "<#FFD93D>✦ <#FFB347>MÁXIMO"
+    - ""
+    - "<#A8B2D1>Este encantamiento ya está"
+    - "<#A8B2D1>al nivel máximo."
+
+  # Tier 1 available
+  tier1-lore: "<#FFD93D>▶ <#43E97B>Clic para ver niveles"
+
+  # Tier 1 blocked (incompatible) — shows WHY it can't be applied
+  blocked-name: "<#6C7293><bold><st>{name}</st></bold>"
+  blocked-conflict: "<#FF6B6B>✘ Conflicto con: <#A8B2D1>{enchantments}"
+  blocked-required: "<#FF6B6B>✘ Requiere antes: <#A8B2D1>{enchantments}"
+  blocked-type-limit: "<#FF6B6B>✘ Límite de esta categoría alcanzado"
+
+  # Already applied level
+  already-applied-lore:
+    - ""
+    - "<#FF6B6B><bold>Ya Aplicado</bold>"
+    - "<#A8B2D1>Este ítem ya tiene este"
+    - "<#A8B2D1>nivel o uno superior."
+
+  # Available enchantment (green book)
+  available-name: "<#43E97B>{name}"
+  available-lore-current-level: "<#A8B2D1>Nivel actual: <#E8E8FF>{level}"
+  available-lore-next-level: "<#A8B2D1>Siguiente nivel: <#43E97B>{level}"
+  # Líneas informativas (rareza y progreso de nivel). {rarity} ya viene localizado
+  # vía rarity-names; {current}/{max} son números romanos.
+  lore-rarity: "<#6C7293>✦ <#A8B2D1>Rareza: <#FFB347>{rarity}"
+  lore-level: "<#6C7293>✦ <#A8B2D1>Nivel: <#E8E8FF>{current} <#6C7293>/ <#43E97B>{max}"
+  # Probabilidad de éxito (solo con success-chance activo). {chance}=efectiva,
+  # {base}=base de la rareza, {booster}=lo que aporta el potenciador.
+  lore-chance: "<#6C7293>✦ <#A8B2D1>Probabilidad: <#43E97B>{chance}%"
+  lore-chance-boosted: "<#6C7293>✦ <#A8B2D1>Probabilidad: <#43E97B>{chance}% <#6C7293>({base}% +<#C084FC>{booster}%<#6C7293>)"
+  available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}"
+  available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
+  available-lore-reagent: "<#A8B2D1>Reactivo: <#43E97B>{amount}x {item}"
+  # Línea de sub-habilidades de Magia en el icono (solo si Magia está activa): muestra
+  # cuánto éxito/ahorro/reembolso aporta TU nivel de Magia. Vacío si la skill no está.
+  magia-line: "<#C084FC>Magia {level} <#6C7293>· <#43E97B>+{success}%<#6C7293> éxito · <#FFD93D>-{discount}%<#6C7293> coste · <#C084FC>{refund}%<#6C7293> reembolso"
+  available-lore-button: "<#FFD93D>▶ <#43E97B>Clic para encantar"
+
+  # Unavailable/locked enchantment (gray dye)
+  unavailable-name: "<#FF6B6B>{name}"
+  unavailable-lore-next-level: "<#A8B2D1>Siguiente nivel: <#FF6B6B>{level}"
+  unavailable-xp-fail: "<#FF6B6B>✘ Necesitas {cost}"
+  unavailable-xp-fail-current: "<#FF6B6B>  (tienes {balance})"
+  unavailable-xp-ok: "<#43E97B>✔ Fondos suficientes"
+  unavailable-power-fail: "<#FF6B6B>✘ Poder requerido: {required}"
+  unavailable-power-ok: "<#43E97B>✔ Poder suficiente"
+  unavailable-reagent-fail: "<#FF6B6B>✘ Reactivo: {amount}x {item}"
+  unavailable-reagent-ok: "<#43E97B>✔ Reactivo: {amount}x {item}"
+  unavailable-footer: "<#FF6B6B>✘ No disponible"
+
+# ─────────────────────────────────────────────
+# GENERAL
+# ─────────────────────────────────────────────
+general:
+  no-permission: "<#FF6B6B>✘ <#A8B2D1>No tienes permiso para usar esto."
+  missing-message: "<#FF6B6B>Missing message: {key}"
+  items-recovered: "<#43E97B>✔ <#A8B2D1>Se han recuperado objetos que tenías en un menú antes de un reinicio."
+  reload-success: "<#43E97B>✔ <#A8B2D1>Configuración de SuperEnchanter recargada."
+  command-info: "<#43E97B>SuperEnchanter <#A8B2D1>v{version} <#4A4A5E>— <#A8B2D1>usa <#43E97B>/superenchanter reload"
+
+# ─────────────────────────────────────────────
+# COMANDOS ADMIN (/se)
+# ─────────────────────────────────────────────
+command:
+  info: "<#43E97B>SuperEnchanter <#A8B2D1>v{version}\n<#6C7293>/se reload · give <id> [jugador] · book <ench> <nivel> [jugador] · bookshelf · audit [líneas] [jugador]"
+  player-only: "<#FF6B6B>✘ <#A8B2D1>Ese comando solo lo puede usar un jugador."
+  player-not-found: "<#FF6B6B>✘ <#A8B2D1>No se encontró al jugador <#FFB347>{player}<#A8B2D1> (¿está conectado?)."
+  no-mythicmobs: "<#FF6B6B>✘ <#A8B2D1>MythicMobs no está instalado; no puedo generar el item."
+
+  give-unknown: "<#FF6B6B>✘ <#A8B2D1>No existe un item de MythicMobs con id <#FFB347>{id}<#A8B2D1>."
+  give-self: "<#43E97B>✔ <#A8B2D1>Recibiste <#FFB347>{id}<#A8B2D1>."
+  give-other: "<#43E97B>✔ <#A8B2D1>Diste <#FFB347>{id}<#A8B2D1> a <#43E97B>{player}<#A8B2D1>."
+  give-received: "<#43E97B>✔ <#A8B2D1>Has recibido <#FFB347>{id}<#A8B2D1>."
+
+  book-unknown: "<#FF6B6B>✘ <#A8B2D1>No existe el encantamiento <#FFB347>{input}<#A8B2D1>."
+  book-self: "<#43E97B>✔ <#A8B2D1>Recibiste un libro de <#FFB347>{enchant} {level}<#A8B2D1>."
+  book-other: "<#43E97B>✔ <#A8B2D1>Diste un libro de <#FFB347>{enchant} {level}<#A8B2D1> a <#43E97B>{player}<#A8B2D1>."
+
+  bookshelf-none: "<#A8B2D1>No hay librerías encantadas marcadas en este chunk."
+  bookshelf-header: "<#C084FC><bold>Librerías en este chunk:</bold> <#A8B2D1>{count}"
+  bookshelf-entry: "<#6C7293> • <#A8B2D1>{pos} <#6C7293>→ <#FFB347>{id} <#6C7293>(poder {power})"
+
+  audit-empty: "<#A8B2D1>El log de auditoría está vacío (o no coincide el filtro)."
+  audit-header: "<#C084FC><bold>Últimas {count} entradas de auditoría:</bold>"
+
+# ─────────────────────────────────────────────
+# CATEGORY & RARITY NAMES
+# ─────────────────────────────────────────────
+# Nombres localizados de las categorías (tipos de EcoEnchants) y rarezas. La clave
+# es el id (minúsculas). Si falta, se usa el id con la primera letra en mayúscula.
+#
+# Las categorías = los 'type' de types.yml. El COLOR de cada categoría va aquí en
+# el propio nombre (MiniMessage) para que la plantilla 'enchanting.category-name'
+# (que solo añade negrita) lo respete y cada tier salga con su color.
+category-names:
+  comun: "<#B0B6BE>Común"
+  raro: "<gradient:#3B82F6:#60A5FA>Raro"
+  epico: "<gradient:#A855F7:#D8B4FE>Épico"
+  legendario: "<gradient:#FF9D00:#FFE259>Legendario"
+  divino: "<gradient:#5EF1FF:#FFFFFF:#FFD45E>Divino"
+  curse: "<gradient:#8E0E0E:#FF4D4D>Maldición"
+  spell: "<gradient:#06B6D4:#22D3EE>Hechizos"
+  other: "<#A8B2D1>Otros"
+# Nombres de rareza (se muestran en el lore, p.ej. "Rareza: Épico"). Sin color:
+# lo colorea la plantilla enchant-icons.lore-rarity.
+rarity-names:
+  comun: "Común"
+  raro: "Raro"
+  epico: "Épico"
+  legendario: "Legendario"
+  divino: "Divino"
+
+# ─────────────────────────────────────────────
+# ENCHANTMENT DESCRIPTIONS
+# ─────────────────────────────────────────────
+# Añade descripciones para cualquier encantamiento usando su nombre interno en minúsculas.
+# Si el plugin detecta la clave aquí, se añadirá automáticamente al lore del ítem.
+# Si no la encuentra, simplemente no pondrá descripción.
+enchantment-descriptions:
+  sharpness:
+    - "<#A8B2D1>Aumenta el daño infligido con"
+    - "<#A8B2D1>armas cuerpo a cuerpo."
+  protection:
+    - "<#A8B2D1>Reduce la mayoría de los daños recibidos."
+  efficiency:
+    - "<#A8B2D1>Aumenta la velocidad de minado."
+  unbreaking:
+    - "<#A8B2D1>Aumenta la durabilidad del objeto."

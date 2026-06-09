@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.scrulius.superenchanter.gui.enchanting.BookshelfScannerMockTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.087">
+  <properties/>
+  <testcase name="no bookshelves means zero power" classname="dev.scrulius.superenchanter.gui.enchanting.BookshelfScannerMockTest" time="0.079"/>
+  <testcase name="each adjacent vanilla bookshelf contributes its configured power" classname="dev.scrulius.superenchanter.gui.enchanting.BookshelfScannerMockTest" time="0.004"/>
+  <testcase name="a marked enchanted library adds its tier power on top, bucketed separately" classname="dev.scrulius.superenchanter.gui.enchanting.BookshelfScannerMockTest" time="0.002"/>
+  <testcase name="library power bypasses the vanilla soft-cap" classname="dev.scrulius.superenchanter.gui.enchanting.BookshelfScannerMockTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[[00:17:45 INFORMACIÓN]: ✔ Hooked into EcoEnchants (required dependency).
+[00:17:45 INFORMACIÓN]: ✘ Vault not found (optional).
+[00:17:45 INFORMACIÓN]: ✘ PlayerPoints not found (optional).
+[00:17:45 INFORMACIÓN]: ✘ MythicMobs not found (optional).
+[00:17:45 INFORMACIÓN]: SuperCore ausente — la skill Magia está desactivada.
+[00:17:45 INFORMACIÓN]: SuperEnchanter v1.0.0 enabled!
+[00:17:45 INFORMACIÓN]: Custom Anvil & Enchanting Table GUIs are active.
+]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="displayText" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-06-08T22:17:45" hostname="SCRULIUS" time="0.002">
+  <properties/>
+  <testcase name="PlayerPoints renders as tokens" classname="dev.scrulius.superenchanter.economy.CostTest$Display" time="0.0"/>
+  <testcase name="XP renders as whole levels" classname="dev.scrulius.superenchanter.economy.CostTest$Display" time="0.0"/>
+  <testcase name="Vault money uses a grouped, currency-prefixed format" classname="dev.scrulius.superenchanter.economy.CostTest$Display" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
