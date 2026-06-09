@@ -161,7 +161,6 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                 "{success}", String.valueOf(magia.successBonus(player)),
                 "{discount}", String.valueOf(magia.discountPercent(player)),
                 "{refund}", String.valueOf(magia.refundChance(player)),
-                "{mana}", String.valueOf(magia.manaBonus(player)),
                 "{xp}", String.valueOf(magia.xpBonusPercent(player))));
         inventory.setItem(SLOT_STATS, new ItemBuilder(Material.PLAYER_HEAD)
                 .name(msg.raw("enchant-icons.stats-head-name"))
