@@ -176,6 +176,10 @@ enchanting:
   magia-xp-suffix: " <#6C7293>(+<#C084FC>{xp}<#6C7293> XP de Magia)"
   # Gating de Magia (carril 5, OFF por defecto): rareza bloqueada hasta cierto nivel de Magia.
   magia-locked: "<#FF6B6B>✘ <#A8B2D1>Necesitas <#C084FC>Magia nivel {level}<#A8B2D1> para encantar esta rareza."
+  # Broadcast a TODO el server al rematar (nivel máximo) un encantamiento de rareza
+  # top (enchanting.jackpot-broadcast). {player}=jugador, {enchantment}=nombre+nivel,
+  # {rarity}=rareza localizada (rarity-names).
+  jackpot-broadcast: "<gradient:#FFB347:#FFD93D><bold>✦ JACKPOT ✦</bold></gradient> <#E8E8FF>{player}<#A8B2D1> ha forjado <#FFB347>{enchantment} <#6C7293>(<#C084FC>{rarity}<#6C7293>)<#A8B2D1> en la mesa de encantamientos."
 
   # Aviso al intentar construir contra una librería encantada sin agacharse.
   library-sneak-build: "<#FFD93D>✦ <#A8B2D1>Agáchate <#6C7293>(Shift)<#A8B2D1> para construir contra la librería."
@@ -353,6 +357,9 @@ enchant-icons:
   # Probabilidad de éxito del intento, con barra de progreso ({bar}). El valor ya
   # incluye el bonus de Magia: lo que ves es EXACTAMENTE lo que se tira.
   lore-chance: "<#A8B2D1>Éxito: {bar} <#43E97B>{chance}%"
+  # Piedad (soft pity): racha de fallos consecutivos en ESTE ítem y el bonus que
+  # ya está sumado al % de arriba. Solo aparece con racha activa.
+  lore-pity: "<#C084FC>♻ Mala racha: <#E8E8FF>{streak}<#C084FC> fallos → <#43E97B>+{bonus}%<#C084FC> incluido"
   # Probabilidad EXACTA de que un éxito maldiga el ítem (escala con la rareza).
   lore-curse: "<#A8B2D1>Maldición: <#FF4D4D>☠ {chance}%"
   # Riesgo de downgrade si el intento FALLA. {level}=nivel al que caería (romano).
@@ -376,6 +383,18 @@ enchant-icons:
   available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
   # Botón de intento ({name} = encantamiento + nivel que se intenta).
   available-lore-button: "<#FFD93D>▶ <#43E97B>Clic para intentar {name}"
+
+  # ── Confirmación de intentos caros (enchanting.confirm-expensive) ──
+  # El icono se transforma en este aviso al primer clic; el segundo clic confirma.
+  # {cost} = coste ya con descuentos · {levels} = sufijo "≈ N niveles" · {chance} = % exacto.
+  confirm-name: "<#FFB347><bold>⚠ ¿Confirmar {name}?</bold>"
+  confirm-lore:
+    - "<#A8B2D1>Este intento cuesta <#FFB347>{cost}{levels}<#A8B2D1>."
+    - "<#A8B2D1>Probabilidad de éxito: <#43E97B>{chance}%"
+    - "<#6C7293>El coste se consume aunque falle."
+    - ""
+    - "<#FFD93D>▶ <#43E97B>Clic de nuevo para confirmar"
+    - "<#6C7293>Cualquier otro clic cancela."
 
   # ── Cabeza de estadísticas del jugador (panel de bonus de Magia) ──
   # Solo se muestra si Magia está activa. Reúne TODOS los bonus en un sitio en vez de

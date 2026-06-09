@@ -356,6 +356,30 @@ public final class EcoEnchantsHook {
      */
     public @Nullable Enchantment randomApplicableCurse(@NotNull ItemStack item,
                                                        @NotNull java.util.Set<String> excludedKeyPaths) {
+        List<Enchantment> applicable = applicableCurses(item, excludedKeyPaths);
+        if (applicable.isEmpty()) {
+            return null;
+        }
+        return applicable.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(applicable.size()));
+    }
+
+    /**
+     * Whether at least one curse could actually land on this item — used by the
+     * enchant icon so the curse-% line is only shown when the risk is REAL (an
+     * empty pool would make the displayed percentage a lie).
+     *
+     * @param item             the item being enchanted
+     * @param excludedKeyPaths curse key-paths to never pick (lowercase)
+     * @return {@code true} if the curse roll has a non-empty pool for this item
+     */
+    public boolean hasApplicableCurse(@NotNull ItemStack item,
+                                      @NotNull java.util.Set<String> excludedKeyPaths) {
+        return !applicableCurses(item, excludedKeyPaths).isEmpty();
+    }
+
+    /** The curses that target the item, aren't already present and aren't vetoed. */
+    private @NotNull List<Enchantment> applicableCurses(@NotNull ItemStack item,
+                                                        @NotNull java.util.Set<String> excludedKeyPaths) {
         var present = dev.scrulius.superenchanter.util.EnchantmentHelper.getEnchantments(item).keySet();
         List<Enchantment> applicable = new ArrayList<>();
         for (Enchantment curse : allCurses()) {
@@ -366,10 +390,7 @@ public final class EcoEnchantsHook {
                 applicable.add(curse);
             }
         }
-        if (applicable.isEmpty()) {
-            return null;
-        }
-        return applicable.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(applicable.size()));
+        return applicable;
     }
 
     /**

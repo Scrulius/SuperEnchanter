@@ -203,7 +203,7 @@ public final class EnchantingLogic {
      * Returns an empty string for a {@code null} rarity (vanilla-only enchantment).
      */
     @NotNull
-    private static String rarityDisplayName(
+    public static String rarityDisplayName(
             @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin, @Nullable String rarityId) {
         if (rarityId == null || rarityId.isBlank()) {
             return "";
@@ -437,12 +437,15 @@ public final class EnchantingLogic {
      *
      * @param offer the analyzed enchantment
      * @param step  the next purchasable rung, or {@code null} when maxed by override
+     * @param item  the input item (drives the soft-pity streak and the curse-pool
+     *              check), or {@code null} to skip both
      */
     @NotNull
     public static ItemStack createEnchantIcon(@NotNull AnalyzedEnchant offer,
                                               @Nullable NextStep step,
                                               @NotNull Player player,
                                               int bookshelfPower,
+                                              @Nullable ItemStack item,
                                               @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
         final MessagesConfig msg = plugin.getMessages();
         final PluginConfig config = plugin.getPluginConfig();
@@ -533,7 +536,7 @@ public final class EnchantingLogic {
                     "{max}", toRoman(cappedMaxLevel(offer, plugin)))));
         }
         lore.add("");
-        appendRiskLore(lore, offer, player, plugin);
+        appendRiskLore(lore, offer, player, item, plugin);
 
         if (canAfford && hasEnoughPower) {
             lore.add(msg.format("enchant-icons.available-lore-cost",
@@ -576,13 +579,34 @@ public final class EnchantingLogic {
     }
 
     /**
+     * The soft-pity bonus (percentage points) the player has accrued on this item's
+     * ladder for an enchantment — consecutive failures stored in the item's PDC,
+     * translated through the configured per-fail/cap. 0 when pity is off or the
+     * item is unknown. The GUI roll MUST use this same value (shown = rolled).
+     */
+    public static int pityBonus(@NotNull Enchantment enchantment,
+                                @Nullable ItemStack item,
+                                @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
+        final PluginConfig config = plugin.getPluginConfig();
+        if (!config.isPityEnabled() || item == null) {
+            return 0;
+        }
+        return EnchantFormulas.pityBonus(
+                dev.scrulius.superenchanter.util.PityTracker.streak(plugin, item, enchantment),
+                config.getPityPerFail(), config.getPityMaxBonus());
+    }
+
+    /**
      * Appends the transparent-risk block of an attempt: the success-chance bar
-     * (base + Magia bonus — the value MUST match the roll in the GUI), the exact
-     * curse probability and, when there is a level to lose, the downgrade risk.
+     * (base + Magia bonus + soft-pity streak — the value MUST match the roll in
+     * the GUI), the bad-streak line when pity is active, the exact curse
+     * probability (only when a curse could actually land on this item) and, when
+     * there is a level to lose, the downgrade risk.
      */
     private static void appendRiskLore(@NotNull List<String> lore,
                                        @NotNull AnalyzedEnchant offer,
                                        @NotNull Player player,
+                                       @Nullable ItemStack item,
                                        @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
         final PluginConfig config = plugin.getPluginConfig();
         final MessagesConfig msg = plugin.getMessages();
@@ -590,17 +614,27 @@ public final class EnchantingLogic {
 
         if (config.isSuccessChanceEnabled()) {
             final int magiaBonus = (magia != null && magia.isEnabled()) ? magia.successBonus(player) : 0;
+            final int pity = pityBonus(offer.enchantment(), item, plugin);
             final int effective = EnchantFormulas.effectiveChance(
-                    config.getBaseSuccessChance(offer.rarityId()), magiaBonus);
+                    config.getBaseSuccessChance(offer.rarityId()), magiaBonus + pity);
             lore.add(msg.format("enchant-icons.lore-chance", Map.of(
                     "{bar}", EnchantFormulas.progressBar(effective, 100, BAR_SEGMENTS,
                             BAR_SUCCESS_TAG, BAR_EMPTY_TAG),
                     "{chance}", String.valueOf(effective))));
+            if (pity > 0 && item != null) {
+                lore.add(msg.format("enchant-icons.lore-pity", Map.of(
+                        "{streak}", String.valueOf(dev.scrulius.superenchanter.util.PityTracker
+                                .streak(plugin, item, offer.enchantment())),
+                        "{bonus}", String.valueOf(pity))));
+            }
         }
 
         if (config.isCurseChanceEnabled()) {
             final double curse = config.getCurseChance(offer.rarityId());
-            if (curse > 0) {
+            // Only show the risk when it is REAL: an item no curse can target
+            // would make the displayed percentage a lie.
+            if (curse > 0 && (item == null || plugin.getEcoHook()
+                    .hasApplicableCurse(item, config.getExcludedCurseKeys()))) {
                 lore.add(msg.format("enchant-icons.lore-curse",
                         Map.of("{chance}", formatPercent(curse))));
             }
@@ -632,9 +666,9 @@ public final class EnchantingLogic {
      * non-XP costs.
      */
     @NotNull
-    private static String xpLevelsHint(@NotNull Cost cost,
-                                       @NotNull Player player,
-                                       @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
+    public static String xpLevelsHint(@NotNull Cost cost,
+                                      @NotNull Player player,
+                                      @NotNull dev.scrulius.superenchanter.SuperEnchanterPlugin plugin) {
         if (cost.type() != dev.scrulius.superenchanter.economy.CostType.XP) {
             return "";
         }

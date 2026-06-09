@@ -75,6 +75,19 @@ public final class PluginConfig {
     private int downgradeDefaultChance;
     private Map<String, Integer> downgradeRarityChance = java.util.Collections.emptyMap();
 
+    // ── Soft pity (cached) — consecutive failures add success chance, reset on success ──
+    private boolean pityEnabled;
+    private int pityPerFail;
+    private int pityMaxBonus;
+
+    // ── Expensive-attempt confirmation (cached) — first click arms, second confirms ──
+    private boolean confirmExpensiveEnabled;
+    private int confirmMinCost;
+
+    // ── Jackpot broadcast (cached) — final-level success of top rarities is announced ──
+    private boolean jackpotBroadcastEnabled;
+    private java.util.Set<String> jackpotRarities = java.util.Collections.emptySet();
+
     // ── Transfer settings (cached) ──
     private boolean transferEnabled;
     private boolean transferAllowExtract;
@@ -388,6 +401,32 @@ public final class PluginConfig {
         return downgradeRarityChance.getOrDefault(rarityId.toLowerCase(Locale.ROOT), downgradeDefaultChance);
     }
 
+    /** @return whether soft pity (consecutive failures add success chance) is active */
+    public boolean isPityEnabled() { return pityEnabled; }
+
+    /** @return percentage points of success chance gained per consecutive failure */
+    public int getPityPerFail() { return pityPerFail; }
+
+    /** @return the cap on the total soft-pity bonus (percentage points) */
+    public int getPityMaxBonus() { return pityMaxBonus; }
+
+    /** @return whether expensive enchant attempts require a second confirming click */
+    public boolean isConfirmExpensiveEnabled() { return confirmExpensiveEnabled; }
+
+    /** @return the cost (in the charged currency's units) at which an attempt asks for confirmation */
+    public int getConfirmMinCost() { return confirmMinCost; }
+
+    /** @return whether final-level successes of top rarities are broadcast server-wide */
+    public boolean isJackpotBroadcastEnabled() { return jackpotBroadcastEnabled; }
+
+    /**
+     * @param rarityId the EcoEnchants rarity id (case-insensitive), may be {@code null}
+     * @return whether a final-level success of that rarity should be broadcast
+     */
+    public boolean isJackpotRarity(@Nullable String rarityId) {
+        return rarityId != null && jackpotRarities.contains(rarityId.toLowerCase(Locale.ROOT));
+    }
+
     /** @return the number of enchantments shown per page in the GUI */
     public int getEnchantsPerPage() { return enchantsPerPage; }
 
@@ -641,6 +680,13 @@ public final class PluginConfig {
         downgradeDefaultChance =
                 clampPercent(config.getInt("enchanting.success-chance.downgrade.default", 20));
         downgradeRarityChance = parsePercentMap("enchanting.success-chance.downgrade.by-rarity");
+        pityEnabled = config.getBoolean("enchanting.success-chance.pity.enabled", true);
+        pityPerFail = Math.max(0, config.getInt("enchanting.success-chance.pity.per-fail-bonus", 3));
+        pityMaxBonus = clampPercent(config.getInt("enchanting.success-chance.pity.max-bonus", 30));
+        confirmExpensiveEnabled = config.getBoolean("enchanting.confirm-expensive.enabled", true);
+        confirmMinCost = Math.max(0, config.getInt("enchanting.confirm-expensive.min-cost", 25000));
+        jackpotBroadcastEnabled = config.getBoolean("enchanting.jackpot-broadcast.enabled", true);
+        jackpotRarities = parseLowerSet("enchanting.jackpot-broadcast.rarities");
         curseChanceEnabled = config.getBoolean("enchanting.curse-chance.enabled", true);
         curseBasePercent = Math.max(0, config.getDouble("enchanting.curse-chance.base-percent", 1.0));
         curseRarityChance = parseDoubleMap("enchanting.curse-chance.by-rarity");

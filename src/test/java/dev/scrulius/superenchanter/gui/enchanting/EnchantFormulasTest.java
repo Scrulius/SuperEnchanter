@@ -15,6 +15,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class EnchantFormulasTest {
 
     @Nested
+    @DisplayName("pityBonus")
+    class PityBonus {
+
+        @Test
+        @DisplayName("no streak (or disabled knobs) means no bonus")
+        void noStreakNoBonus() {
+            assertEquals(0, EnchantFormulas.pityBonus(0, 3, 30));
+            assertEquals(0, EnchantFormulas.pityBonus(-1, 3, 30));
+            assertEquals(0, EnchantFormulas.pityBonus(5, 0, 30));
+            assertEquals(0, EnchantFormulas.pityBonus(5, 3, 0));
+        }
+
+        @Test
+        @DisplayName("bonus grows linearly with the streak")
+        void linearGrowth() {
+            assertEquals(3, EnchantFormulas.pityBonus(1, 3, 30));
+            assertEquals(12, EnchantFormulas.pityBonus(4, 3, 30));
+        }
+
+        @Test
+        @DisplayName("bonus is capped at max-bonus")
+        void capped() {
+            assertEquals(30, EnchantFormulas.pityBonus(10, 3, 30));
+            assertEquals(30, EnchantFormulas.pityBonus(100, 3, 30));
+        }
+    }
+
+    @Nested
     @DisplayName("geometricCost")
     class GeometricCost {
 

@@ -94,6 +94,25 @@ public final class AnvilLogic {
                                               @Nullable ItemStack sacrifice,
                                               @NotNull PluginConfig config,
                                               @NotNull AnvilEnchantGate gate) {
+        return calculateResult(target, sacrifice, config, gate, (a, b) -> false);
+    }
+
+    /**
+     * Same as {@link #calculateResult(ItemStack, ItemStack, PluginConfig, AnvilEnchantGate)}
+     * plus an injected pairwise conflict test for rules vanilla doesn't know about
+     * (EcoEnchants {@code conflicts} / {@code conflictsAll}). The per-enchant gate
+     * is built once against the <em>target</em>, so it cannot see a conflict between
+     * two NEW enchantments arriving from the same sacrifice — this predicate closes
+     * that gap, checked against the evolving merged set like the vanilla test.
+     *
+     * @param extraConflict pairwise conflict verdict beyond {@code conflictsWith}
+     */
+    @NotNull
+    public static AnvilResult calculateResult(@Nullable ItemStack target,
+                                              @Nullable ItemStack sacrifice,
+                                              @NotNull PluginConfig config,
+                                              @NotNull AnvilEnchantGate gate,
+                                              @NotNull java.util.function.BiPredicate<Enchantment, Enchantment> extraConflict) {
         if (target == null || target.getType().isAir()
                 || sacrifice == null || sacrifice.getType().isAir()) {
             return AnvilResult.EMPTY;
@@ -129,7 +148,8 @@ public final class AnvilLogic {
             boolean hasConflict = false;
             for (Enchantment existing : mergedEnchants.keySet()) {
                 if (!existing.equals(enchantment)
-                        && (existing.conflictsWith(enchantment) || enchantment.conflictsWith(existing))) {
+                        && (existing.conflictsWith(enchantment) || enchantment.conflictsWith(existing)
+                                || extraConflict.test(existing, enchantment))) {
                     hasConflict = true;
                     break;
                 }

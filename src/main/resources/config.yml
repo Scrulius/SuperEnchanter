@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 16
+config-version: 17
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -94,8 +94,11 @@ enchanting:
 
   # Tope máximo de poder de estantería. El tramo alto SOLO lo dan las librerías
   # encantadas (ver vanilla-power-cap), así que los encantamientos top exigen una
-  # mesa bien construida con librerías.
-  max-bookshelf-power: 330
+  # mesa bien construida con librerías. REBAJADO de 330 a 200: la mesa de 330
+  # exigía un monolito de 60 bloques de poder con línea de visión — feo y molesto
+  # de construir. Con 200, la mesa divina son 17 librerías + 30 vanilla: ambiciosa
+  # pero razonable.
+  max-bookshelf-power: 200
 
   # Tope a lo que aportan las estanterías VANILLA (no marcadas). Por mucho que
   # llenes la sala de bookshelves normales, no pasarás de aquí: del soft-cap al
@@ -117,7 +120,7 @@ enchanting:
   # una estantería normal. La clave es el id del item de MM; el valor es el poder
   # que aporta. Se marca al colocarla, se devuelve al picarla y es indestructible
   # por TNT/fuego/pistones/endermen.
-  #   Para llegar al max (330): 30 vanilla (tope) + 30 librerías × 10 = 330.
+  #   Para llegar al max (200): 30 vanilla (tope) + 17 librerías × 10 = 200.
   enchanted-bookshelves:
     libreria_encantada: 10
 
@@ -178,8 +181,9 @@ enchanting:
   # El % EXACTO se muestra en el icono (barra de progreso) antes de clicar.
   success-chance:
     enabled: true
-    # Probabilidad base (0-100) para rarezas sin entrada propia.
-    default: 100
+    # Probabilidad base (0-100) para rarezas sin entrada propia. Conservador a
+    # propósito (antes 100): una rareza nueva mal mapeada NO debe ser éxito gratis.
+    default: 60
     # Probabilidad base por rareza. REBALANCEADA al quitar los sellos y añadir el
     # downgrade: con las bases antiguas (divino 10) la deriva esperada por intento
     # (p - (1-p)*downgrade) salía NEGATIVA y el nivel máximo era estadísticamente
@@ -207,6 +211,38 @@ enchanting:
         epico: 20
         legendario: 25
         divino: 30
+    # ── Piedad (soft pity): protección contra malas rachas ──
+    # Cada FALLO consecutivo en el mismo encantamiento del mismo ítem suma
+    # per-fail-bonus puntos de % de éxito al SIGUIENTE intento (tope max-bonus);
+    # un éxito resetea la racha. Apenas cambia el coste esperado, pero recorta la
+    # cola de la distribución (fallar 6 veces seguidas el remate es lo que quema a
+    # la gente). La racha vive en el PDC del propio ítem (sobrevive a reinicios y
+    # viaja con él) y se muestra en el icono ("Mala racha: N fallos → +X%").
+    pity:
+      enabled: true
+      per-fail-bonus: 3
+      max-bonus: 30
+
+  # ── Confirmación de intentos caros ──
+  # Un intento cuyo coste (ya con descuentos) alcance min-cost NO se tira al primer
+  # clic: el icono se transforma en un aviso ámbar "¿Confirmar?" con el coste, la
+  # equivalencia en niveles y el % exacto; un segundo clic en el MISMO icono (antes
+  # de ~8s) confirma y tira. Cualquier otro clic cancela. Evita que un misclic
+  # queme la fortuna de un jugador (un remate legendario vale 150.000 puntos).
+  confirm-expensive:
+    enabled: true
+    min-cost: 25000
+
+  # ── Broadcast de jackpot ──
+  # Al REMATAR (nivel máximo) un encantamiento de estas rarezas con éxito, se
+  # anuncia a todo el server (mensaje 'enchanting.jackpot-broadcast' en
+  # messages.yml). Los juegos de azar viven de los jackpots públicos: crea
+  # aspiración y celebra el momento más caro del juego.
+  jackpot-broadcast:
+    enabled: true
+    rarities:
+      - legendario
+      - divino
 
   # ── Probabilidad de maldición al encantar ──
   # Al encantar con ÉXITO hay una probabilidad de que el ítem reciba además una
@@ -246,14 +282,19 @@ enchanting:
     # (la mesa custom no dispara el encantar vanilla del que viviría esa skill).
     skill-id: enchanting
     # XP de Magia por NIVEL de encantamiento ganado, ponderada por rareza. Los que no
-    # aparezcan usan 'default'.
+    # aparezcan usan 'default'. ⚠️ REBALANCEADA ×20 (antes 2/5/12/25/50): con los
+    # valores viejos y la fórmula de la skill (ceil(12·nivel²): Magia 20 = 34.440 XP,
+    # Magia 35 = 178.920) el gate de legendario exigía ~7.000 encantamientos y el de
+    # divino ~30.000 — legendario/divino eran decorativos. Con ×20, Magia 20 sale en
+    # ~200-450 operaciones (semanas de juego activo) y Magia 35 en ~1.100-2.300
+    # (endgame de meses). La armadura de mago (+44%) y los boosters lo aceleran.
     xp-per-rarity:
-      comun: 2
-      raro: 5
-      epico: 12
-      legendario: 25
-      divino: 50
-      default: 5
+      comun: 40
+      raro: 100
+      epico: 240
+      legendario: 500
+      divino: 1000
+      default: 100
     # Fracción de la XP que se gana aun FALLANDO un peldaño ("aprendes del error").
     xp-fail-fraction: 0.25
     # Carril 1 — probabilidad de éxito: +per-level % por nivel de Magia, tope max-bonus %.
@@ -342,19 +383,21 @@ enchanting:
   # poder(nivel) = min( max-bookshelf-power, floor + nivel * step )
   # El 'floor' hace que una rareza exija un mínimo de poder YA en el nivel I,
   # así el poder controla la MAGNITUD (rareza), no solo la fracción de nivel.
-  # Calibrado para max-bookshelf-power 330 y vanilla-power-cap 30:
-  #   - common: por debajo de 30 → mesa de solo estanterías vanilla.
-  #   - uncommon: justo por encima → pide alguna librería.
-  #   - rare/epic/legendary: exigen un muro de librerías (legendary roza 330).
+  # Calibrado para max-bookshelf-power 200 y vanilla-power-cap 30 (1 librería = +10):
+  #   - comun: por debajo de 30 → mesa de solo estanterías vanilla.
+  #   - raro: I=42 (2 librerías) … V=70 (4 librerías).
+  #   - epico: I=72 (5) … V=120 (9).
+  #   - legendario: I=126 (10) … V=190 (16).
+  #   - divino: I=180 (15), II+ = 200 (el cap → la torre completa de 17).
   default-rarity-power:
     floor: 0
     step: 5
   rarity-power:
     comun:      { floor: 0,   step: 4 }
-    raro:       { floor: 35,  step: 12 }
-    epico:      { floor: 90,  step: 20 }
-    legendario: { floor: 170, step: 30 }
-    divino:     { floor: 260, step: 35 }
+    raro:       { floor: 35,  step: 7 }
+    epico:      { floor: 60,  step: 12 }
+    legendario: { floor: 110, step: 16 }
+    divino:     { floor: 160, step: 20 }
 
   # (Los reactivos materiales fueron ELIMINADOS por diseño: la mesa consume SOLO
   #  Experiencia. El riesgo viene del % de éxito, el downgrade y las maldiciones.)
@@ -376,7 +419,9 @@ transfer:
   allow-extract: true
 
   # Multiplicador de coste de la EXTRACCIÓN respecto a transferir (crea un libro
-  # vendible, por eso cuesta más). 1.0 = igual que transferir.
+  # vendible, por eso cuesta más). 1.0 = igual que transferir. Escala la CURVA
+  # (la base ×N); el 'max-cost' de abajo capa el importe FINAL, también extrayendo
+  # (antes el multiplicador se aplicaba después del cap y lo saltaba en silencio).
   extract-cost-multiplier: 2.0
 
   # Moneda del coste: XP, VAULT o PLAYER_POINTS.

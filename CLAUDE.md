@@ -148,6 +148,12 @@ Las dos comparten layout para que se lean igual: fondo **negro** (`BLACK_STAINED
   sobrecarga de 3 args usa `AnvilEnchantGate.ALLOW_ALL` (los tests MockBukkit no cambian); la de 4
   args aplica el gate. Los nombres de encantamiento en la lista de conflictos usan
   `EcoEnchantsHook.displayNameOrFallback` (localizado por eco, NO `prettyName` en inglés).
+  **Hueco de pares cerrado (2026-06)**: el gate es por-encantamiento contra el target, así que no veía
+  el conflicto eco entre **dos encantamientos NUEVOS del mismo sacrificio** (que no conflicten por
+  reglas vanilla). Sobrecarga de 5 args con un `BiPredicate<Enchantment,Enchantment>` inyectado
+  (`AnvilGUI.ecoConflicts`, lee `conflicts()`/`conflictsAll()` del `EnchantmentIndex`, O(1) por par),
+  chequeado contra el merged-set evolutivo igual que el test vanilla. Las sobrecargas de 3/4 args
+  delegan con `(a,b) -> false` (los tests MockBukkit no cambian).
 - Coste XP/Vault/PlayerPoints con overrides por ítem, vía `CostService` compartido.
 - NO renombra ni repara durabilidad (decisión: el server RPG desactiva mending/grindstone).
 - **Identidad de ítem (`AnvilGUI.isMergeableSacrifice`/`sameIdentity`)**: el sacrificio solo vale si es
@@ -243,6 +249,17 @@ eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunq
 - **Single-level sin romano**: un encantamiento con maxLevel 1 se muestra "Vitalidad", no
   "Vitalidad I". Los iconos muestran además **rareza** (`lore-rarity`) y progreso de nivel
   (`lore-level`).
+- **Confirmación de intentos caros** (`enchanting.confirm-expensive`, default ON, `min-cost 25000`):
+  si el coste efectivo (con descuentos) llega al umbral, el primer clic NO tira — el icono se
+  transforma in-place en un aviso ámbar (`enchant-icons.confirm-name/-lore`: coste, "≈ N niveles",
+  % exacto) y el **segundo clic en el mismo slot** (antes de 8s) confirma; cualquier otro clic o
+  refresco desarma (`EnchantingGUI.armConfirm/disarmConfirm`, estado `armedSlot/armedEnchant/
+  armedUntilMillis`; `updatePreview` y los clics ajenos desarman). Evita misclicks de 150k puntos.
+- **Broadcast de jackpot** (`enchanting.jackpot-broadcast`, default ON, rarezas
+  `[legendario, divino]`): al **rematar** (éxito en el nivel máximo `cappedMaxLevel`) un
+  encantamiento de esas rarezas se anuncia a todo el server (`enchanting.jackpot-broadcast` en
+  messages.yml, vía `Bukkit.getServer().sendMessage`). El momento más caro del juego se celebra en
+  público — aspiración gratis.
 
 ### Transferencia / extracción de encantamientos (grindstone repurposado)
 Banco dual abierto interceptando el grindstone (`BlockInteractListener` + failsafe en
@@ -256,8 +273,10 @@ ejecuta TODOS los seleccionados de golpe. El modo lo decide si hay destino o no:
   pasa de `BOOK` a `ENCHANTED_BOOK`; si había stack, devuelve el sobrante y el libro encantado va al
   jugador). `computeExtractOffers` lista los del donante **excepto maldiciones** (callejón sin salida) y
   `extractToBook(List)` construye el libro. **Coste extra**: `transfer.extract-cost-multiplier` (default
-  2.0) — extraer crea un libro vendible, cuesta más que mover. `TransferGUI.extractMode` (= destino es
-  libro) cambia botón+acción.
+  2.0) — extraer crea un libro vendible, cuesta más que mover. ⚠️ El multiplicador escala la **base de la
+  curva** y el `max-cost` capa el importe FINAL (`TransferLogic.extractCost`; antes se multiplicaba
+  DESPUÉS del cap y lo saltaba en silencio — el cap documentado era mentira). `TransferGUI.extractMode`
+  (= destino es libro) cambia botón+acción.
 - **Validación 100% reutilizada**: `TransferLogic.computeOffers` corre `EnchantingLogic.analyze()`
   sobre el DESTINO y cruza con los encantamientos del donante. Así respeta EXACTAMENTE las reglas
   de la mesa (targets/conflictos/requeridos/type-limit/blacklist) sin duplicar nada. `TransferBlock`
@@ -302,6 +321,10 @@ Objetivo: una **bookshelf vanilla REAL** (sin resource pack) que da más poder y
   de poder vanilla (las encantadas son la fuente real, impacto menor).
 - Config `enchanting.enchanted-bookshelves: { libreria_encantada: 10 }` (un solo tipo, +10 poder;
   el item MM es `CHISELED_BOOKSHELF`, se sella con libros y se bloquea su click derecho — ver abajo).
+- **Max power 200** (rebajado de 330, 2026-06: la mesa de 330 exigía un monolito de ~60 bloques de
+  poder con LOS — feo y molesto): 30 vanilla (tope) + **17 librerías** ×10 = 200. `rarity-power`
+  recalibrado en proporción (raro 35/7, épico 60/12, legendario 110/16, divino 160/20 → divino II+
+  pide el cap 200 = torre completa).
 - **Chiseled selladas**: la librería es una `CHISELED_BOOKSHELF`. Al colocarla (`sealIfChiseled`)
   se rellena el inventario del tile con libros + se fuerzan las flags `slot_occupied` (respaldo).
   `onInteract` cancela el click derecho sin agachado (no se sacan libros); **construir contra ella
@@ -398,11 +421,16 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
     clicar (no falla al clicar), y `handleLevelClick` lo re-bloquea con actionbar
     `enchanting.magia-locked`. Si Magia se desactiva (sin SuperCore), `canEnchant` devuelve true → el
     gate cae solo (no bloquea a nadie). ⚠️ Diseño: la rareza alta es un **gamble de % de éxito**
-    (`by-rarity` rebalanceado a 80/65/35/20/10), no solo un candado; divino premium a 10% → el Sello
-    Divino (garantía) es la jugada segura, el Reembolso Arcano mitiga el fallo.
+    (`by-rarity` actual 85/70/55/40/25), no solo un candado; el Reembolso Arcano y la piedad
+    mitigan el fallo (los sellos de garantía ya no existen).
 - **XP por operación** (`grantXp`, devuelve la XP dada): `niveles_ganados × xp(rareza)` + una
   fracción (`xp-fail-fraction`, 0.25) si un peldaño falló ("aprendes del error"). Solo si se cobró
-  algo. **Feedback**: el action bar de encantar (success/partial/fail/cursed) anexa el sufijo
+  algo. ⚠️ **`xp-per-rarity` REBALANCEADA ×20 (2026-06: 40/100/240/500/1000, default 100)** — con los
+  valores viejos (2/5/12/25/50) y la fórmula `ceil(12·nivel²)` (Magia 20 = 34.440 XP acumulada,
+  Magia 35 = 178.920), el gate de legendario exigía ~7.000 encantamientos y el de divino ~30.000:
+  legendario/divino eran inalcanzables. Con ×20: Magia 20 ≈ 200-450 operaciones, Magia 35 ≈
+  1.100-2.300 (endgame de meses). Si se toca la fórmula de la skill o estos valores, recalcular en
+  OPERACIONES, no en fórmulas. **Feedback**: el action bar de encantar (success/partial/fail/cursed) anexa el sufijo
   `enchanting.magia-xp-suffix` (`{magia}` → "+N ✦ Magia") cuando se ganó XP. ⚠️ El número del sufijo
   es la XP **base** (pre-multiplicador); con armadura de mago o un booster de AxBoosters el jugador
   recibe más (lo aplica eco en el evento `PlayerSkillXPGainEvent`, ver arriba).
@@ -454,13 +482,22 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
 **Activado por defecto** (`enchanting.success-chance.enabled: true`; `false` = kill-switch que vuelve
 al 100% garantizado). Cada **intento** (clic = un peldaño) tiene una **probabilidad de éxito por
 rareza**; un **fallo consume el coste igual** — y puede además **bajar un nivel** (downgrade).
-- **Curva**: `prob = clamp(base(rareza) + bonusMagia, 0..100)` (`EnchantFormulas.effectiveChance`,
-  pura/testeada). **Los sellos de rareza fueron ELIMINADOS** (rediseño hardcore 2026-06): el récord
-  `Booster`, `getBoosterPercent/getBooster/getSuccessBoosterIds`, el slot de potenciador y
-  `success-chance.boosters` ya NO existen. El único sello superviviente es el **Sello Purificador**
-  (yunque, quitar maldiciones). Las dos mitigaciones que quedan: **nivel de Magia** (+% éxito) y la
-  **fusión en yunque de dos ítems idénticos** (ruta determinista que consume un segundo ítem entero —
-  la "garantía" cara que sustituye a los sellos).
+- **Curva**: `prob = clamp(base(rareza) + bonusMagia + bonusPiedad, 0..100)`
+  (`EnchantFormulas.effectiveChance`, pura/testeada). **Los sellos de rareza fueron ELIMINADOS**
+  (rediseño hardcore 2026-06): el récord `Booster`, `getBoosterPercent/getBooster/getSuccessBoosterIds`,
+  el slot de potenciador y `success-chance.boosters` ya NO existen. El único sello superviviente es el
+  **Sello Purificador** (yunque, quitar maldiciones). Mitigaciones: **nivel de Magia** (+% éxito), la
+  **piedad** (abajo) y la **fusión en yunque de dos ítems idénticos** (ruta determinista que consume
+  un segundo ítem entero — la "garantía" cara que sustituye a los sellos).
+- **Piedad / soft pity (`success-chance.pity`, default ON, `per-fail-bonus 3 / max-bonus 30`)**:
+  cada fallo consecutivo en el MISMO encantamiento del MISMO ítem suma +3% al siguiente intento
+  (tope +30); el éxito resetea la racha. Recorta la cola de la distribución (las rachas son lo que
+  quema a la gente) sin mover apenas el coste esperado. **La racha vive en el PDC del ítem**
+  (`util/PityTracker`, key `superenchanter:pity`, formato `"ns:key=n;…"` — codec puro testeado;
+  sin SQL, sobrevive a reinicios y viaja con el ítem). Se muestra en el icono
+  (`enchant-icons.lore-pity`) y el bonus YA está sumado al % de la barra (mostrado = tirado);
+  `EnchantingLogic.pityBonus` lo calcula y `handleEnchantClick` lo usa en la tirada. ⚠️ El fallo
+  ahora MUTA el ítem (escribe el PDC) → invalida los caches por-ítem (analyze/gate), correcto.
 - **Downgrade (`success-chance.downgrade`, default ON)**: al FALLAR, tirada extra por rareza
   (`comun 0 / raro 15 / epico 20 / legendario 25 / divino 30`) de que el encantamiento **baje un
   nivel**; a nivel I se **pierde** (`EnchantmentHelper.removeEnchantment`). Solo aplica si había nivel
@@ -470,6 +507,7 @@ rareza**; un **fallo consume el coste igual** — y puede además **bajar un niv
   deriva esperada por intento es `p − (1−p)·d`; con las bases antiguas (divino 10%) salía NEGATIVA →
   por eso `by-rarity` se rebalanceó a **85/70/55/40/25**. Si tocas bases o downgrade, re-comprueba que
   la deriva quede positiva para cada rareza (con el bonus de Magia del gate incluido).
+  `success-chance.default` bajó de 100 a **60**: una rareza nueva mal mapeada no debe ser éxito gratis.
 - **Tirada por clic** (`EnchantingGUI.handleEnchantClick`): cobra el `stepCost` (efectivo con
   descuentos), tira `ThreadLocalRandom`; éxito → aplica nivel + tirada de maldición; fallo → tirada de
   Reembolso Arcano (independiente) + tirada de downgrade. Maldición (en éxito) y downgrade (en fallo)
@@ -494,9 +532,14 @@ Sistema de riesgo/sumidero alrededor de las maldiciones (`type: curse`), default
   server usa keepinventory → no pierdes ítems al morir) y `binding_curse` (rompería el juego: con
   keepinventory no se suelta al morir y no podrías meterla en el yunque para purificar → armadura pegada
   para siempre). El pool de la tirada son las maldiciones custom (`enchants/maldiciones/`). La tirada va
-  **por intento exitoso** (= por nivel ganado, con la progresión secuencial). Feedback: sonido/partícula
-  de fallo + actionbar `enchanting.cursed` (con hint de cura), audit `ENCHANT-CURSE`. Solo en éxito (un
-  fallo ya te cuesta el coste y arriesga downgrade — los castigos nunca se apilan).
+  **por intento exitoso** (= por nivel ganado, con la progresión secuencial). **El % solo se pinta si el
+  riesgo es REAL**: `EcoEnchantsHook.hasApplicableCurse(item, excluded)` comprueba que el pool aplicable
+  al ítem no esté vacío (antes el icono mostraba "8%" en ítems que ninguna maldición targeteaba — mentira
+  al alza). Feedback del éxito-maldito: **sonido/partícula de ÉXITO primero** (el jugador SÍ ganó el
+  nivel) y el sting de maldición (sonido de fallo) **10 ticks después** vía `runTaskLater` — antes sonaba
+  solo a fallo y el jugador creía haber perdido. Actionbar `enchanting.cursed` (con hint de cura), audit
+  `ENCHANT-CURSE`. Solo en éxito (un fallo ya te cuesta el coste y arriesga downgrade — los castigos
+  nunca se apilan).
 - **Curación (yunque, Sello Purificador) = única salida**: `anvil.curse-removal` (default ON). Objeto
   maldito a la izq + Sello Purificador (`seal-ids`, item MythicMobs) a la der → "Forjar" quita **TODAS**
   las maldiciones y consume el sello. **GRATIS** (el coste es el propio item, que se vende caro).
@@ -530,12 +573,16 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 16`. Corre en cada reload. ⚠️ El rediseño hardcore
+  conserva comentarios. `config-version: 17`. Corre en cada reload. ⚠️ El rediseño hardcore
   **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`, y TODAS las curvas
   de coste al pasar a PUNTOS de XP — mesa/yunque/transfer) que el auto-merge NO pisa, y dejó claves
   muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar `config.yml`** en el server
   (borrar y dejar que se regenere) para que aplique el rebalanceo. ⚠️ Si los importes viejos
   (niveles, p.ej. `max-xp-cost: 18`) se quedan con el cobro por puntos, la mesa sale casi GRATIS.
+  ⚠️ La **v17 (2026-06) también cambió valores existentes** — `max-bookshelf-power` 330→200 +
+  `rarity-power` entera, `success-chance.default` 100→60, `magia.xp-per-rarity` ×20 — además de añadir
+  `success-chance.pity`, `confirm-expensive` y `jackpot-broadcast` (estas tres sí entran solas por
+  auto-merge). **Regenerar `config.yml`** para que aplique el rebalanceo de valores.
 - **`general.gui-disabled-worlds`** (lista de mundos): ahí el yunque/mesa/grindstone quedan
   **vanilla** (no se interceptan). Lo respetan `BlockInteractListener` (no abre la GUI) **y**
   `VanillaBlockListener` (no cancela el inventario vanilla ni los eventos de encantar) →
@@ -638,8 +685,8 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 - **Pre-índice** de encantamientos por categoría al arrancar (solo si hay lag con muchísimos EcoEnchants).
 - **Tests** (JUnit 5 + MockBukkit `org.mockbukkit:mockbukkit-v26.1.2`; paper-api declarada como
   `testImplementation` aparte porque el `compileOnly` del main no se hereda): **cubierto** = matemática
-  pura (`AnvilFormulas`, `EnchantFormulas` con `geometricCost`/`filledSegments`/`progressBar`,
-  `XpMath`, `Cost`/`CostType`,
+  pura (`AnvilFormulas`, `EnchantFormulas` con `geometricCost`/`filledSegments`/`progressBar`/
+  `pityBonus`, `XpMath`, `Cost`/`CostType`, `PityTracker` (codec parse/serialize),
   `BookshelfScanner.lineCells`, `EnchantingLogic.classifyBlock`) + MockBukkit (`AnvilLogic.calculateResult`
   con el `AnvilEnchantGate`, `BookshelfScanner.scan`, `CostService`). ⚠️ **NO testeable con MockBukkit**
   todo lo que llama a EcoEnchants/EcoSkills (`analyze()`, `nextStep`, `TransferLogic.computeOffers`,

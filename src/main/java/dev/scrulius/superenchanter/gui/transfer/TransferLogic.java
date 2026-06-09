@@ -175,6 +175,25 @@ public final class TransferLogic {
     }
 
     /**
+     * Cost of <b>extracting</b> an enchantment to a book: the transfer curve with
+     * the extraction multiplier scaling the base — and the {@code max-cost} cap
+     * applied to the FINAL amount, so the configured cap is the real ceiling for
+     * any grindstone operation (the old order multiplied after capping, silently
+     * doubling past the documented limit).
+     */
+    @NotNull
+    public static Cost extractCost(@Nullable String rarityId, int level, @NotNull PluginConfig config) {
+        final double rarityMult = config.isTransferUseRarityMultiplier()
+                ? config.getRarityCostMultiplier(rarityId)
+                : 1.0;
+        final int amount = EnchantFormulas.geometricCost(
+                config.getTransferBaseCost() * config.getTransferExtractMultiplier(),
+                config.getTransferLevelGrowth(),
+                level, rarityMult, 1.0, config.getTransferMaxCost());
+        return new Cost(config.getTransferCostType(), amount);
+    }
+
+    /**
      * Applies a transferred enchantment to the target at the result level. The
      * builder in {@link EnchantmentHelper} overwrites any lower existing level.
      */
@@ -216,10 +235,7 @@ public final class TransferLogic {
             final int level = entry.getValue();
             final String name = plugin.getEcoHook().displayNameOrFallback(ench);
             final String rarityId = plugin.getEcoHook().getRarityId(ench);
-            // Extraction makes a tradeable book → costs more than a plain move.
-            final Cost base = transferCost(rarityId, level, config);
-            final Cost cost = new Cost(base.type(),
-                    base.amount() * config.getTransferExtractMultiplier());
+            final Cost cost = extractCost(rarityId, level, config);
             // No target → targetLevel 0, result = the donor's own level, always allowed.
             out.add(new TransferOffer(ench, name, level, 0, level, rarityId, cost,
                     TransferBlock.NONE, List.of()));

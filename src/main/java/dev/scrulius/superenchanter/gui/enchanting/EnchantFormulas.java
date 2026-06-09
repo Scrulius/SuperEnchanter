@@ -67,6 +67,25 @@ public final class EnchantFormulas {
     }
 
     /**
+     * Soft-pity bonus (percentage points) for a consecutive-failure streak:
+     * {@code min(maxBonus, streak · perFail)}, never negative. The bonus is added
+     * to the success chance (and reset on success), so a bad streak converges
+     * instead of spiralling — it caps the tail of the distribution without
+     * meaningfully changing the expected cost.
+     *
+     * @param streak   consecutive failures on this enchantment ladder (≥0)
+     * @param perFail  percentage points gained per consecutive failure
+     * @param maxBonus the cap on the total pity bonus
+     * @return the pity bonus in {@code [0, maxBonus]}
+     */
+    public static int pityBonus(int streak, int perFail, int maxBonus) {
+        if (streak <= 0 || perFail <= 0 || maxBonus <= 0) {
+            return 0;
+        }
+        return Math.min(maxBonus, streak * perFail);
+    }
+
+    /**
      * Required bookshelf power for a single enchantment level: a per-rarity floor
      * plus a per-level step, capped at {@code maxPower}. Rarity therefore gates
      * the magnitude reachable, not the fraction of a level.

@@ -139,7 +139,8 @@ public class AnvilGUI extends AbstractCustomGUI {
             return;
         }
 
-        AnvilResult result = AnvilLogic.calculateResult(target, sacrifice, config, gateFor(target));
+        AnvilResult result = AnvilLogic.calculateResult(target, sacrifice, config,
+                gateFor(target), this::ecoConflicts);
 
         if (result.isValid()) {
             showValidResult(result, sacrifice);
@@ -175,7 +176,8 @@ public class AnvilGUI extends AbstractCustomGUI {
             return;
         }
 
-        AnvilResult result = AnvilLogic.calculateResult(target, sacrifice, config, gateFor(target));
+        AnvilResult result = AnvilLogic.calculateResult(target, sacrifice, config,
+                gateFor(target), this::ecoConflicts);
 
         if (!result.isValid() || result.resultItem() == null) {
             config.getErrorSound().play(player);
@@ -481,6 +483,21 @@ public class AnvilGUI extends AbstractCustomGUI {
         // blacklisted → rejected (0).
         cachedGate = ench -> caps.getOrDefault(ench, 0);
         return cachedGate;
+    }
+
+    /**
+     * Pairwise EcoEnchants conflict test (declared {@code conflicts} sets or
+     * {@code conflictsAll}) fed into the merge so two NEW enchantments arriving
+     * from the same sacrifice can't slip past the per-target gate. Reads the
+     * precomputed {@link dev.scrulius.superenchanter.gui.enchanting.EnchantmentIndex},
+     * so it's O(1) per pair.
+     */
+    private boolean ecoConflicts(@NotNull Enchantment a, @NotNull Enchantment b) {
+        final var index = plugin.getEnchantmentIndex();
+        final var ea = index.get(a);
+        final var eb = index.get(b);
+        return (ea != null && (ea.conflictsAll() || ea.conflicts().contains(b)))
+                || (eb != null && (eb.conflictsAll() || eb.conflicts().contains(a)));
     }
 
     /** The per-enchant max level, applying any configured max-level override. */

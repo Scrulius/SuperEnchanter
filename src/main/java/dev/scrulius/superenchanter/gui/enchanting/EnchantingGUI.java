@@ -82,6 +82,14 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     /** Navigation state: category null = tier 1 (categories); else tier 2 (enchantments). */
     private String selectedCategory = null;
 
+    // ── Expensive-attempt confirmation (armed state) ─────────────────────────
+    /** Slot whose icon is currently rendered as a confirmation prompt (-1 = none). */
+    private int armedSlot = -1;
+    /** The enchantment the armed prompt belongs to (stale-guard for the second click). */
+    private Enchantment armedEnchant = null;
+    /** Wall-clock deadline after which the armed prompt silently expires. */
+    private long armedUntilMillis = 0L;
+
     /** Cached one-shot analysis of the current input item (see EnchantingLogic#analyze). */
     private List<AnalyzedEnchant> analysis = new ArrayList<>();
     private ItemStack analyzedItem = null;
@@ -167,6 +175,7 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
     @Override
     protected void updatePreview() {
+        disarmConfirm();
         final ItemStack inputItem = inventory.getItem(SLOT_INPUT);
 
         if (inputItem == null || inputItem.getType() == Material.AIR) {
@@ -207,6 +216,12 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     @Override
     protected void onSlotClick(@NotNull Player player, int slot,
                                @NotNull InventoryClickEvent event) {
+        // Clicking anywhere other than the armed prompt cancels the confirmation.
+        if (armedSlot >= 0 && slot != armedSlot) {
+            disarmConfirm();
+            renderPage();
+        }
+
         // ── Close / Back button ────────────────────────────────────────
         if (slot == SLOT_CLOSE) {
             if (selectedCategory != null) {
@@ -334,8 +349,33 @@ public final class EnchantingGUI extends AbstractCustomGUI {
         if (magiaOn) {
             cost = magia.applyDiscount(player, cost);
         }
-        if (!plugin.getCostService().canAfford(player, cost)
-                || !plugin.getCostService().deduct(player, cost)) {
+        if (!plugin.getCostService().canAfford(player, cost)) {
+            config.getErrorSound().play(player);
+            player.sendActionBar(msg.parsed("enchanting.not-enough-xp",
+                    Map.of("{cost}", cost.displayText(),
+                            "{balance}", plugin.getCostService().balanceText(player, cost.type()))));
+            return;
+        }
+
+        // Pity bonus BEFORE any mutation — shown in the icon, used by the roll
+        // and by the confirmation prompt (shown = rolled, always).
+        final int magiaBonus = magiaOn ? magia.successBonus(player) : 0;
+        final int pityBonus = EnchantingLogic.pityBonus(enchantment, working, plugin);
+        final int effChance = EnchantFormulas.effectiveChance(
+                config.getBaseSuccessChance(offer.rarityId()), magiaBonus + pityBonus);
+
+        // ── Expensive attempts arm a confirmation prompt on first click ──
+        if (config.isConfirmExpensiveEnabled() && cost.intAmount() >= config.getConfirmMinCost()) {
+            final boolean confirmed = armedSlot == slot && enchantment.equals(armedEnchant)
+                    && System.currentTimeMillis() <= armedUntilMillis;
+            if (!confirmed) {
+                armConfirm(slot, enchantment, levelName(offer, step.level()), cost, effChance);
+                return;
+            }
+            disarmConfirm();
+        }
+
+        if (!plugin.getCostService().deduct(player, cost)) {
             config.getErrorSound().play(player);
             player.sendActionBar(msg.parsed("enchanting.not-enough-xp",
                     Map.of("{cost}", cost.displayText(),
@@ -345,9 +385,6 @@ public final class EnchantingGUI extends AbstractCustomGUI {
         applyCooldown();
 
         // ── The roll ──
-        final int magiaBonus = magiaOn ? magia.successBonus(player) : 0;
-        final int effChance = EnchantFormulas.effectiveChance(
-                config.getBaseSuccessChance(offer.rarityId()), magiaBonus);
         final boolean ok = !config.isSuccessChanceEnabled()
                 || ThreadLocalRandom.current().nextInt(100) < effChance;
 
@@ -358,6 +395,9 @@ public final class EnchantingGUI extends AbstractCustomGUI {
         int charged = cost.intAmount();
 
         if (ok) {
+            // A success resets this ladder's pity streak.
+            working = dev.scrulius.superenchanter.util.PityTracker
+                    .clearStreak(plugin, working, enchantment);
             working = EnchantingLogic.applyEnchantment(working, enchantment, step.level());
             newLevel = step.level();
             appliedCurse = maybeApplyCurse(working, offer.rarityId());
@@ -365,6 +405,11 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                 working = EnchantingLogic.applyEnchantment(working, appliedCurse, 1);
             }
         } else {
+            // Soft pity: every consecutive failure raises the next attempt's chance.
+            if (config.isPityEnabled()) {
+                working = dev.scrulius.superenchanter.util.PityTracker
+                        .incrementStreak(plugin, working, enchantment);
+            }
             // Reembolso Arcano (Magia): chance to recover this attempt's cost.
             if (magiaOn && magia.refundChance(player) > ThreadLocalRandom.current().nextInt(100)) {
                 plugin.getCostService().refund(player, cost);
@@ -407,8 +452,16 @@ public final class EnchantingGUI extends AbstractCustomGUI {
         // ── Feedback ────────────────────────────────────────────────────────
         final org.bukkit.Location effectLoc = tableBlock.getLocation().add(0.5, 1.5, 0.5);
         if (ok && appliedCurse != null) {
-            config.getEnchantFailSound().play(player);
-            config.getEnchantFailParticle().spawn(player.getWorld(), effectLoc);
+            // The player DID win the level — celebrate the success first, then land
+            // the curse sting a moment later (fail-sound-only read as a failure).
+            config.getEnchantSuccessSound().play(player);
+            config.getEnchantSuccessParticle().spawn(player.getWorld(), effectLoc);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    config.getEnchantFailSound().play(player);
+                    config.getEnchantFailParticle().spawn(player.getWorld(), effectLoc);
+                }
+            }, 10L);
             player.sendActionBar(msg.parsed("enchanting.cursed",
                     Map.of("{enchantment}", attemptName,
                             "{curse}", plugin.getEcoHook().displayNameOrFallback(appliedCurse),
@@ -440,6 +493,15 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                             "{magia}", magiaInfo)));
         }
 
+        // ── Jackpot broadcast: finishing the ladder of a top rarity is news ──
+        if (ok && config.isJackpotBroadcastEnabled() && config.isJackpotRarity(offer.rarityId())
+                && step.level() >= EnchantingLogic.cappedMaxLevel(offer, plugin)) {
+            Bukkit.getServer().sendMessage(msg.parsed("enchanting.jackpot-broadcast",
+                    Map.of("{player}", player.getName(),
+                            "{enchantment}", attemptName,
+                            "{rarity}", EnchantingLogic.rarityDisplayName(plugin, offer.rarityId()))));
+        }
+
         // ── Audit ───────────────────────────────────────────────────────────
         final var audit = plugin.getAuditLog();
         final String action = ok
@@ -453,6 +515,37 @@ public final class EnchantingGUI extends AbstractCustomGUI {
 
         updatePreview();
         persistInputItems();
+    }
+
+    // ── Expensive-attempt confirmation ──────────────────────────────────────
+
+    /**
+     * Renders the clicked offer as an in-place confirmation prompt: same slot,
+     * amber "are you sure?" name, the exact cost / level hint / chance in the
+     * lore. The second click on the same slot (within the timeout) performs the
+     * attempt; any other click or a GUI refresh cancels silently.
+     */
+    private void armConfirm(int slot, @NotNull Enchantment enchantment,
+                            @NotNull String attemptName, @NotNull Cost cost, int effChance) {
+        armedSlot = slot;
+        armedEnchant = enchantment;
+        armedUntilMillis = System.currentTimeMillis() + 8000L;
+        inventory.setItem(slot, new ItemBuilder(Material.ENCHANTED_BOOK)
+                .name(msg.format("enchant-icons.confirm-name", Map.of("{name}", attemptName)))
+                .lore(msg.formatList("enchant-icons.confirm-lore", Map.of(
+                        "{cost}", cost.displayText(),
+                        "{levels}", EnchantingLogic.xpLevelsHint(cost, player, plugin),
+                        "{chance}", String.valueOf(effChance))))
+                .glow()
+                .build());
+        plugin.getPluginConfig().getButtonClickSound().play(player);
+    }
+
+    /** Clears the armed confirmation state (the prompt icon is repainted by the next render). */
+    private void disarmConfirm() {
+        armedSlot = -1;
+        armedEnchant = null;
+        armedUntilMillis = 0L;
     }
 
     /** Display name with its roman level suffix (omitted for single-level enchantments). */
@@ -505,7 +598,7 @@ public final class EnchantingGUI extends AbstractCustomGUI {
                     final AnalyzedEnchant offer = enchantOffers.get(offerIndex);
                     inventory.setItem(guiSlot, EnchantingLogic.createEnchantIcon(
                             offer, EnchantingLogic.nextStep(offer, plugin),
-                            player, bookshelfPower, plugin));
+                            player, bookshelfPower, inventory.getItem(SLOT_INPUT), plugin));
                 } else {
                     inventory.setItem(guiSlot,
                             EnchantingLogic.createCategoryIcon(categoryOffers.get(offerIndex), plugin));
