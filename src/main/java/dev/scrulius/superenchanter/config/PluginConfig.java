@@ -587,9 +587,9 @@ public final class PluginConfig {
     private void loadAnvilSettings() {
         anvilDefaultCostType = config.getString("anvil.default-cost-type", "XP");
         // XP amounts are raw experience POINTS, not levels (see CostService#deduct).
-        anvilBaseXPCost = config.getInt("anvil.base-xp-cost", 50);
-        anvilCostPerLevel = config.getInt("anvil.cost-per-enchant-level", 120);
-        anvilMaxCost = config.getInt("anvil.max-xp-cost", 3000);
+        anvilBaseXPCost = config.getInt("anvil.base-xp-cost", 250);
+        anvilCostPerLevel = config.getInt("anvil.cost-per-enchant-level", 600);
+        anvilMaxCost = config.getInt("anvil.max-xp-cost", 15000);
         chainForgingEnabled = config.getBoolean("anvil.chain-forging", true);
         anvilCostOverrides = parseCostOverrides();
         curseRemovalEnabled = config.getBoolean("anvil.curse-removal.enabled", true);
@@ -622,10 +622,10 @@ public final class PluginConfig {
         enchantingCostType = CostType.fromString(config.getString("enchanting.cost-type", "XP"));
         rarityCostTypes = parseRarityCostTypes();
         // XP amounts are raw experience POINTS, not levels (see CostService#deduct).
-        baseXPCost = config.getInt("enchanting.base-xp-cost", 75);
-        levelXPMultiplier = config.getInt("enchanting.level-xp-multiplier", 55);
+        baseXPCost = config.getInt("enchanting.base-xp-cost", 375);
+        levelXPMultiplier = config.getInt("enchanting.level-xp-multiplier", 275);
         costExponent = config.getDouble("enchanting.cost-exponent", 1.15);
-        maxXpCost = config.getInt("enchanting.max-xp-cost", 2500);
+        maxXpCost = config.getInt("enchanting.max-xp-cost", 12500);
         enchantsPerPage = config.getInt("enchanting.enchantments-per-page", 8);
         disabledEnchantments = config.getStringList("enchanting.disabled-enchantments");
         defaultRarityMultiplier = config.getDouble("enchanting.default-rarity-multiplier", 1.0);
@@ -812,10 +812,10 @@ public final class PluginConfig {
         transferAllowExtract = config.getBoolean("transfer.allow-extract", true);
         transferCostType = CostType.fromString(config.getString("transfer.cost-type", "XP"));
         // XP amounts are raw experience POINTS, not levels (see CostService#deduct).
-        transferBaseCost = config.getInt("transfer.base-cost", 100);
-        transferLevelMultiplier = config.getInt("transfer.level-multiplier", 80);
+        transferBaseCost = config.getInt("transfer.base-cost", 500);
+        transferLevelMultiplier = config.getInt("transfer.level-multiplier", 400);
         transferCostExponent = config.getDouble("transfer.cost-exponent", 1.15);
-        transferMaxCost = config.getInt("transfer.max-cost", 4000);
+        transferMaxCost = config.getInt("transfer.max-cost", 20000);
         transferUseRarityMultiplier = config.getBoolean("transfer.use-rarity-multiplier", true);
         transferRequireSameMaterial = config.getBoolean("transfer.require-same-material", false);
         transferExtractMultiplier = config.getDouble("transfer.extract-cost-multiplier", 2.0);

@@ -217,14 +217,16 @@ eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunq
 - **Coste SOLO XP, por intento, en PUNTOS reales**: `coste(nivel) = min(max-xp-cost,
   multRareza*(base + mult*nivel^cost-exponent))` — cada clic cobra SOLO ese peldaño (no hay coste
   acumulativo: `cumulativeCost` fue eliminada junto con el salto de niveles). ⚠️ **Los importes son
-  PUNTOS de XP, no niveles** (mesa 75/55/exp 1.15/cap 2500; referencia: nivel 30 vanilla = 1.395
-  pts → un intento de divino V ≈ 2.500 pts ≈ toda la XP de un nivel 33). El icono traduce el coste a
+  PUNTOS de XP, no niveles** (mesa 375/275/exp 1.15/cap 12500; referencia: nivel 30 vanilla = 1.395
+  pts, nivel 69 ≈ 12.500 → un intento de divino V = 12.500 pts = toda la XP de un nivel 69). El
+  ×5 sobre el primer rebalanceo a puntos vino del autor: a nivel de NIVELES seguía saliendo tirado.
+  El icono traduce el coste a
   **"≈ N niveles para ti"** con la XP real del jugador (`CostService.xpLevelsEquivalent` + `XpMath`;
   claves `enchant-icons.lore-cost-levels(-sub1)`). Los **reactivos materiales fueron ELIMINADOS**
   (lapis/amatista fuera; `Reagent` ya no existe) y `rarity-cost-type` quedó **vacío** (divino ya NO
   se cobra en PlayerPoints; su "premium" es el gate de Magia 35 + poder 260+ + 25% base + 8%
   maldición). El mecanismo `rarity-cost-type` sigue en el código por si se revierte. El yunque
-  (50/120/cap 3000) y la transferencia (100/80/exp 1.15/cap 4000) también pasaron a puntos — el
+  (250/600/cap 15000) y la transferencia (500/400/exp 1.15/cap 20000) también pasaron a puntos — el
   yunque es la ruta determinista y no podía quedarse en calderilla.
 - **Poder por rareza**: `min(maxPower, floor + nivel*step)` por rareza (`enchanting.rarity-power`).
   El poder gatea la MAGNITUD, no la fracción de nivel.
@@ -259,7 +261,7 @@ ejecuta TODOS los seleccionados de golpe. El modo lo decide si hay destino o no:
 - **Coste** vía `EnchantFormulas.xpCostForLevel` (POR encantamiento; el botón cobra la **suma** de los
   seleccionados, `TransferGUI.totalCost`). Sección `transfer` (cost-type, base/level-mult/exponent/
   max-cost, `use-rarity-multiplier`, `require-same-material`). **Rebalanceado a propósito MÁS barato que
-  la mesa** (`base 100 / level-mult 80 / exp 1.15 / cap 4000`, en PUNTOS de XP): mover/extraer
+  la mesa** (`base 500 / level-mult 400 / exp 1.15 / cap 20000`, en PUNTOS de XP): mover/extraer
   recupera algo ya creado (y destruye el donante), no debe costar más que encantar de cero.
 - **UX tipo yunque**: clic en un encantamiento lo **togglea** (multi-select); un botón dedicado
   ejecuta todos (un misclic nunca destruye el donante). 2 slots de input, anti-dupe heredado de
@@ -522,7 +524,7 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 14`. Corre en cada reload. ⚠️ El rediseño hardcore
+  conserva comentarios. `config-version: 15`. Corre en cada reload. ⚠️ El rediseño hardcore
   **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`, y TODAS las curvas
   de coste al pasar a PUNTOS de XP — mesa/yunque/transfer) que el auto-merge NO pisa, y dejó claves
   muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar `config.yml`** en el server
