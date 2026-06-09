@@ -197,12 +197,17 @@ public final class MagiaService {
         if (xp <= 0) return 0.0;
         Skill s = skill();
         if (s != null) {
-            // gainSkillXp (natural path) fires PlayerSkillXPGainEvent and applies XP
-            // multipliers — required so the mage-armor enchantments (skill_xp_multiplier,
-            // which listen to that event) actually boost Magia XP. Raw giveSkillXp would
-            // bypass them. Returned `xp` is the base (pre-multiplier) for feedback.
-            SuperCore.ecoSkills().gainSkillXp(player, s, xp);
-            return xp;
+            // We grant XP RAW (giveSkillXp) instead of natural (gainSkillXp) on purpose:
+            // the natural path sends EcoSkills' own "+xp" action bar, which collides with
+            // the table's own action-bar feedback. Raw sends no message — but it also
+            // skips the XP multipliers, so we re-apply the effective multiplier ourselves
+            // (the SAME value the stats head shows: mage-armor skill_xp_multiplier ×
+            // permission boosters). Net XP is identical to the natural path, the mage
+            // build is still honoured, and OTHER skills — gained through normal gameplay,
+            // not this table — keep their natural action-bar feedback untouched.
+            double mult = SuperCore.ecoSkills().effectiveSkillXpMultiplier(player, s);
+            SuperCore.ecoSkills().giveSkillXp(player, s, xp * mult);
+            return xp; // base (pre-multiplier) for the {magia} suffix
         }
         return 0.0;
     }

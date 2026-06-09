@@ -329,15 +329,21 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   `dev.scrulius.supercore.api.SuperCore` (compileOnly al jar de SuperCore en `build.gradle.kts`;
   `SuperCore` en `softdepend` del `plugin.yml` para el orden de carga).
 - `skill-id: enchanting` por defecto: **reutiliza la skill nativa `enchanting`** de EcoSkills
-  (tematizada como "Magia"). Su XP la damos NOSOTROS por API (`SuperCore.ecoSkills().gainSkillXp`,
-  ⚠️ la variante **natural** = `EcoSkillsAPI.gainSkillXP`, NO la raw `giveSkillXP`) — la mesa custom NO
-  dispara el encantar vanilla del que viviría esa skill (y `VanillaBlockListener` bloquea la mesa
-  vanilla → cero doble-conteo). **Por qué la variante natural**: `gainXP` dispara
-  `PlayerSkillXPGainEvent` y aplica los multiplicadores de XP; el efecto libreforge `skill_xp_multiplier`
-  (que usan los encantamientos de armadura tipo "mago", ver abajo) **funciona escuchando ese evento**,
-  así que con la raw `giveSkillXP` esos encantamientos NO harían nada. `gainXP` no manda mensaje/bossbar
-  propio (verificado en bytecode), así que no choca con nuestro feedback. El efecto respeta su filtro
-  `skills:` (mira el skill del evento), así un casco de mago solo sube Magia, no minería/combate. **Lado A (server, HECHO)**: `EcoSkills/skills/enchanting.yml`
+  (tematizada como "Magia"). Su XP la damos NOSOTROS por API — la mesa custom NO dispara el encantar
+  vanilla del que viviría esa skill (y `VanillaBlockListener` bloquea la mesa vanilla → cero
+  doble-conteo). ⚠️ **Damos la XP RAW** (`giveSkillXp` = `EcoSkillsAPI.giveSkillXP`), **no** natural
+  (`gainSkillXp`/`gainSkillXP`). Motivo: la variante **natural manda su PROPIA action bar** ("+N xp"
+  configurada en `EcoSkills/config.yml → skills.gain-xp.action-bar`, GLOBAL, sin toggle por skill) que
+  **se solapaba con la action bar de la mesa**. La raw no manda mensaje, PERO también se salta los
+  multiplicadores de XP → así que **re-aplicamos el multiplicador efectivo a mano** en `MagiaService.grantXp`
+  (`xp * effectiveSkillXpMultiplier`, el MISMO valor que muestra la cabeza de stats: efecto libreforge
+  `skill_xp_multiplier` de la armadura de mago × boosters por permiso). Net: la XP final es idéntica a
+  la natural, la build de mago se sigue respetando, las subidas de nivel se procesan igual (raw sí sube
+  nivel), y **las DEMÁS skills** (que ganan XP por gameplay normal, no por esta mesa) **conservan su
+  action bar natural intacta**. El número del sufijo `{magia}` sigue siendo la XP base (pre-multiplicador).
+  ⚠️ Riesgo asumido: si la reflexión de `effectiveSkillXpMultiplier` fallara, degrada a ×1.0 (el jugador
+  recibiría XP base sin el bonus de armadura) — pero display y realidad quedan consistentes (la cabeza lee
+  el mismo valor). **Lado A (server, HECHO)**: `EcoSkills/skills/enchanting.yml`
   reescrito como "Magia" — `name: Magia`, `xp-formula: ceil(12*nivel^2)` (max-level 50, ~515k XP
   acumulada), `xp-gain-methods: []` (la XP la da SOLO la API), única recompensa `wisdom levels:1`
   (= +1 maná máx/nivel; los efectos nativos second_chance/reimbursement/overcompensation se QUITARON
@@ -368,14 +374,15 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   fracción (`xp-fail-fraction`, 0.25) si un peldaño falló ("aprendes del error"). Solo si se cobró
   algo. **Feedback**: el action bar de encantar (success/partial/fail/cursed) anexa el sufijo
   `enchanting.magia-xp-suffix` (`{magia}` → "+N ✦ Magia") cuando se ganó XP. ⚠️ El número del sufijo
-  es la XP **base** (pre-multiplicador); con armadura de mago el jugador recibe más (lo aplica eco en
-  el evento, ver arriba).
+  es la XP **base** (pre-multiplicador); con armadura de mago el jugador recibe más (lo aplicamos a mano
+  vía `effectiveSkillXpMultiplier`, ver arriba).
 - **Encantamientos "build de mago"** (catálogo EcoEnchants, NO código del plugin): aceleradores de la
   XP de Magia vía efecto `skill_xp_multiplier` (`skills: [enchanting]`). `tunica_de_mago` (raro,
   chestplate, ×1.15 = +15%) y `sombrero_de_mago` (legendario, helmet, ×1.25 = +25%); ambos puestos
   apilan **multiplicativo** → ×1.4375 (~+44%). Solo aceleran el grindeo de la skill (no dan poder de
-  combate/economía) → reward autocontenido, end-game de la profesión. Funcionan SOLO porque la XP va
-  por `gainSkillXp` (natural). Se dan con `/se book tunica_de_mago 1` / `/se book sombrero_de_mago 1`.
+  combate/economía) → reward autocontenido, end-game de la profesión. Funcionan porque su multiplicador
+  se lee con `effectiveSkillXpMultiplier` y lo aplicamos a la XP raw (ver el punto de la XP arriba).
+  Se dan con `/se book tunica_de_mago 1` / `/se book sombrero_de_mago 1`.
   Files: `Ecoenchants_Old/enchants/{raro/tunica_de_mago,legendario/sombrero_de_mago}.yml` (catálogo
   canónico) + desplegados en `plugins/EcoEnchants/enchants/` del server de pruebas.
 - **Reembolso Arcano** (sub-habilidad, `enchanting.magia.refund`): al FALLAR un peldaño, prob.
