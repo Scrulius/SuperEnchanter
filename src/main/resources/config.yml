@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 15
+config-version: 16
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -131,31 +131,37 @@ enchanting:
   # en otra moneda (p.ej. divino: PLAYER_POINTS), añade aquí 'rareza: MONEDA'.
   rarity-cost-type: {}
 
-  # ── Curva de coste ──
+  # ── Curva de coste GEOMÉTRICA ("del copón") ──
   # Coste de UN intento de subir al siguiente nivel:
-  #   coste(nivel) = min( max-xp-cost, multiplicadorRareza * (base + mult * nivel^exponente) )
-  #   - cost-exponent 1.0 = lineal; >1 hace los niveles altos más caros.
-  #   - max-xp-cost capa cada intento para que un solo nivel no se dispare.
-  # La progresión es SECUENCIAL OBLIGATORIA: solo se puede comprar el siguiente nivel
-  # (I → II → III...), cada clic es UN intento con su tirada, y el coste se consume
-  # aunque la tirada falle. No existe el salto directo a niveles altos.
+  #   coste(nivel) = min( max-xp-cost,
+  #                       base * multRareza * level-growth^(nivel-1) * primaRemate )
+  #   - level-growth = factor GEOMÉTRICO: cada nivel cuesta este múltiplo del anterior.
+  #     2.0 = cada nivel DOBLA al anterior → los niveles altos EXPLOTAN (una curva
+  #     lineal/polinómica como la vieja apenas subía; por eso se cambió el algoritmo).
+  #   - primaRemate = final-level-multiplier cuando el nivel es el MÁXIMO del
+  #     encantamiento (rematar la escalera es el peldaño más caro). Si no es el máximo, 1.0.
+  #   - max-xp-cost capa cada intento (se aplica antes de redondear → sin overflow).
+  # La progresión es SECUENCIAL OBLIGATORIA: solo se compra el siguiente nivel (I → II
+  # → III...), cada clic es UN intento con su tirada, y el coste se consume aunque falle.
   #
-  # ⚠️ ESTOS VALORES SON PUNTOS DE EXPERIENCIA REALES, NO NIVELES. Cobrar niveles era
-  # un agujero: 8 niveles pagados desde nivel bajo son cuatro perras en puntos (subir
-  # de 0 a 8 = 112 puntos; de 30 a 38 = +900). Ahora cada intento cuesta LO MISMO
-  # siempre, lo pagues al nivel que lo pagues, y la GUI traduce el coste a
-  # "≈ N niveles para ti" según la XP real del jugador (curva vanilla exacta).
-  # Referencias vanilla: nivel 30 completo = 1.395 puntos; nivel 50 ≈ 5.345;
-  # nivel 69 ≈ 12.500. (×5 sobre el primer rebalanceo: a nivel de NIVELES seguía
-  # saliendo tirado, así que la curva entera se quintuplicó.)
-  #   comun  I≈650  V≈2.140   · raro  ×1.7  · epico ×2.5
-  #   legendario V≈8.550      · divino V≈12.500 (cap) — un intento de divino V vale
-  #   más o menos toda la XP de un jugador nivel 69. Eso es lo "considerablemente
-  #   más caro": el sumidero es brutal y real, no nominal.
-  base-xp-cost: 375
-  level-xp-multiplier: 275
-  cost-exponent: 1.15
-  max-xp-cost: 12500
+  # ⚠️ PUNTOS DE EXPERIENCIA REALES, NO NIVELES. La GUI traduce el coste a "≈ N niveles
+  # para ti" según la XP real del jugador (curva vanilla exacta).
+  # Referencias vanilla (puntos): nivel 30 = 1.395 · nivel 50 = 5.345 · nivel 92 ≈ 30.000
+  # · nivel 200 ≈ 150.000 (el cap). Con base 500, growth 2.0, prima 1.5 y rarezas
+  # 1/2.5/6/15/40, coste de UN intento:
+  #   comun       I=500    III=2.000   V(remate)=12.000
+  #   raro ×2.5   I=1.250  III=5.000   V(remate)=30.000
+  #   epico ×6    I=3.000  III=12.000  V(remate)=72.000
+  #   legendario ×15  I=7.500  III=30.000  V(remate)=cap 150.000
+  #   divino ×40  I=20.000 (un divino max-1 con remate = 30.000 ≈ nivel 92)  III=80.000
+  # Subir un comun ENTERO a V (sumando peldaños, sin fallos) ≈ 19.500 pts ≈ nivel 82.
+  # Un solo intento de divino tardío vale TODA la XP de un jugador nivel 90-200. Brutal
+  # a propósito: es el sumidero "del copón" que pidió el autor. Sube/baja level-growth
+  # (lo que más mueve la aguja en niveles altos), las rarezas o el cap a tu gusto.
+  base-xp-cost: 500
+  level-growth: 2.0
+  final-level-multiplier: 1.5
+  max-xp-cost: 150000
 
   # Encantamientos por página en la lista de la mesa (se capa al nº de slots: 8).
   enchantments-per-page: 8
@@ -320,17 +326,17 @@ enchanting:
     - "#curses"
 
   # ── Multiplicador de coste por rareza (EcoEnchants) ──
-  # Multiplica la curva de coste de arriba según la rareza. Usa los IDs de
-  # rareza de tu EcoEnchants. (El max-xp-cost evita que se disparen.)
+  # Escala TODA la curva geométrica según la rareza. Usa los IDs de rareza de tu
+  # EcoEnchants. ⚠️ REBALANCEADO a valores AGRESIVOS (antes 1/1.7/2.5/4/6): con el
+  # algoritmo geométrico la rareza es el otro gran factor del coste, así que un divino
+  # cuesta DECENAS de veces un común. El max-xp-cost recorta los extremos.
   default-rarity-multiplier: 1.0
   rarity-cost-multipliers:
     comun: 1.0
-    raro: 1.7
-    epico: 2.5
-    legendario: 4.0
-    # Divino se cobra en moneda premium (rarity-cost-type), así que este
-    # multiplicador solo aplica si lo dejas en XP/Vault. Aun así lo dejamos alto.
-    divino: 6.0
+    raro: 2.5
+    epico: 6.0
+    legendario: 15.0
+    divino: 40.0
 
   # ── Poder de estantería requerido por rareza ──
   # poder(nivel) = min( max-bookshelf-power, floor + nivel * step )
@@ -376,15 +382,15 @@ transfer:
   # Moneda del coste: XP, VAULT o PLAYER_POINTS.
   cost-type: XP
 
-  # Coste POR encantamiento = min( max-cost, multRareza * (base-cost + level-multiplier * nivel^exp) )
+  # Coste POR encantamiento (misma curva GEOMÉTRICA que la mesa, sin prima de remate):
+  #   coste = min( max-cost, base-cost * multRareza * level-growth^(nivel-1) )
   # donde 'nivel' es el nivel resultante. Con multi-selección se PAGA la suma de los elegidos.
-  # ⚠️ En PUNTOS de XP reales, no niveles (ver enchanting.base-xp-cost).
-  # Más BARATO que crear en la mesa a propósito: mover/extraer es recuperar algo ya creado
-  # (y destruyes el donante), no debe costar más que encantar de cero.
-  base-cost: 500
-  level-multiplier: 400
-  cost-exponent: 1.15
-  max-cost: 20000
+  # ⚠️ En PUNTOS de XP reales, no niveles (ver enchanting.base-xp-cost). Más BARATO que la
+  # mesa a propósito (growth 1.8 vs 2.0, base menor, sin prima): mover/extraer recupera
+  # algo ya creado y destruye el donante; no debe costar más que encantar de cero.
+  base-cost: 400
+  level-growth: 1.8
+  max-cost: 60000
 
   # Si true, multiplica el coste por enchanting.rarity-cost-multipliers según la
   # rareza del encantamiento (transferir un legendario cuesta más).

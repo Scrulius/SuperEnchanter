@@ -214,20 +214,25 @@ eliminó el tier de niveles). Cada clic = UN intento con su tirada, cobrado aunq
   "displayed" en el slot de input es seguro (el jugador nunca ve lore horneado).
 - **Blacklist unificada** (`PluginConfig.isEnchantDisabled`): acepta key completa, ruta,
   `#curses` (vanilla + tipo curse de EcoEnchants), `#type:<id>`. NO existe `disable-curses`.
-- **Coste SOLO XP, por intento, en PUNTOS reales**: `coste(nivel) = min(max-xp-cost,
-  multRareza*(base + mult*nivel^cost-exponent))` — cada clic cobra SOLO ese peldaño (no hay coste
-  acumulativo: `cumulativeCost` fue eliminada junto con el salto de niveles). ⚠️ **Los importes son
-  PUNTOS de XP, no niveles** (mesa 375/275/exp 1.15/cap 12500; referencia: nivel 30 vanilla = 1.395
-  pts, nivel 69 ≈ 12.500 → un intento de divino V = 12.500 pts = toda la XP de un nivel 69). El
-  ×5 sobre el primer rebalanceo a puntos vino del autor: a nivel de NIVELES seguía saliendo tirado.
-  El icono traduce el coste a
-  **"≈ N niveles para ti"** con la XP real del jugador (`CostService.xpLevelsEquivalent` + `XpMath`;
-  claves `enchant-icons.lore-cost-levels(-sub1)`). Los **reactivos materiales fueron ELIMINADOS**
-  (lapis/amatista fuera; `Reagent` ya no existe) y `rarity-cost-type` quedó **vacío** (divino ya NO
-  se cobra en PlayerPoints; su "premium" es el gate de Magia 35 + poder 260+ + 25% base + 8%
-  maldición). El mecanismo `rarity-cost-type` sigue en el código por si se revierte. El yunque
-  (250/600/cap 15000) y la transferencia (500/400/exp 1.15/cap 20000) también pasaron a puntos — el
-  yunque es la ruta determinista y no podía quedarse en calderilla.
+- **Coste SOLO XP, por intento, en PUNTOS reales, curva GEOMÉTRICA**: cada clic cobra SOLO ese
+  peldaño (no hay coste acumulativo: `cumulativeCost` fue eliminada con el salto de niveles).
+  ⚠️ **Algoritmo "del copón" (`EnchantFormulas.geometricCost`, testeado)**:
+  `coste(nivel) = min(cap, base · multRareza · level-growth^(nivel-1) · primaRemate)` — crecimiento
+  **geométrico** (cada nivel × `level-growth` el anterior → los niveles altos EXPLOTAN; la curva
+  polinómica vieja `base + mult·nivel^1.15` apenas subía y x5 solo escalaba, no cambiaba la forma).
+  La **prima de remate** (`final-level-multiplier`, ×1.5) se aplica cuando el nivel es el MÁXIMO del
+  encantamiento (`nextStep` pasa `finalMult` solo si `level==maxLevel`). El cap se aplica ANTES de
+  redondear → sin overflow de `int`. Defaults mesa: `base 500 / growth 2.0 / prima 1.5 / cap 150000`
+  + rarezas **AGRESIVAS** `1/2.5/6/15/40` (antes 1/1.7/2.5/4/6). Referencias (puntos): común V remate
+  = 12.000; épico V = 72.000; divino I = 20.000 (un divino max-1 con remate = 30.000 ≈ nivel 92);
+  divino tardío toca el cap 150.000 ≈ nivel 200. ⚠️ **Los importes son PUNTOS de XP, no niveles**;
+  el icono traduce el coste a **"≈ N niveles para ti"** con la XP real del jugador
+  (`CostService.xpLevelsEquivalent` + `XpMath`; claves `enchant-icons.lore-cost-levels(-sub1)`). Los
+  **reactivos materiales fueron ELIMINADOS** (`Reagent` ya no existe) y `rarity-cost-type` quedó
+  **vacío** (divino ya NO se cobra en PlayerPoints; su premium es el gate de Magia 35 + poder 260+ +
+  25% base + 8% maldición + curva geométrica ×40). El yunque (`base 250 / por-nivel 600 / cap 15000`,
+  sigue lineal — coste por operación, no por curva de rareza) y la transferencia (misma curva
+  geométrica, `base 400 / growth 1.8 / cap 60000`, sin prima) también en puntos.
 - **Poder por rareza**: `min(maxPower, floor + nivel*step)` por rareza (`enchanting.rarity-power`).
   El poder gatea la MAGNITUD, no la fracción de nivel.
 - **Overrides por encantamiento** (`enchanting.enchantment-overrides`, por key completa o ruta):
@@ -258,11 +263,11 @@ ejecuta TODOS los seleccionados de golpe. El modo lo decide si hay destino o no:
   de la mesa (targets/conflictos/requeridos/type-limit/blacklist) sin duplicar nada. `TransferBlock`
   añade `NOT_APPLICABLE` (no targetea / blacklisted → ausente del analyze) y `ALREADY_OWNED`
   (destino ya tiene nivel ≥; nivel resultante = `max(donante, destino)`).
-- **Coste** vía `EnchantFormulas.xpCostForLevel` (POR encantamiento; el botón cobra la **suma** de los
-  seleccionados, `TransferGUI.totalCost`). Sección `transfer` (cost-type, base/level-mult/exponent/
-  max-cost, `use-rarity-multiplier`, `require-same-material`). **Rebalanceado a propósito MÁS barato que
-  la mesa** (`base 500 / level-mult 400 / exp 1.15 / cap 20000`, en PUNTOS de XP): mover/extraer
-  recupera algo ya creado (y destruye el donante), no debe costar más que encantar de cero.
+- **Coste** vía `EnchantFormulas.geometricCost` (POR encantamiento, sin prima de remate; el botón cobra
+  la **suma** de los seleccionados, `TransferGUI.totalCost`). Sección `transfer` (cost-type,
+  base-cost/level-growth/max-cost, `use-rarity-multiplier`, `require-same-material`). **Más barato que
+  la mesa a propósito** (`base 400 / growth 1.8 / cap 60000`, en PUNTOS de XP): mover/extraer recupera
+  algo ya creado (y destruye el donante), no debe costar más que encantar de cero.
 - **UX tipo yunque**: clic en un encantamiento lo **togglea** (multi-select); un botón dedicado
   ejecuta todos (un misclic nunca destruye el donante). 2 slots de input, anti-dupe heredado de
   `AbstractCustomGUI`. Mensajes/botón usan `{count}` (no por-encantamiento).
@@ -524,7 +529,7 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 15`. Corre en cada reload. ⚠️ El rediseño hardcore
+  conserva comentarios. `config-version: 16`. Corre en cada reload. ⚠️ El rediseño hardcore
   **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`, y TODAS las curvas
   de coste al pasar a PUNTOS de XP — mesa/yunque/transfer) que el auto-merge NO pisa, y dejó claves
   muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar `config.yml`** en el server
@@ -631,7 +636,8 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 - **Pre-índice** de encantamientos por categoría al arrancar (solo si hay lag con muchísimos EcoEnchants).
 - **Tests** (JUnit 5 + MockBukkit `org.mockbukkit:mockbukkit-v26.1.2`; paper-api declarada como
   `testImplementation` aparte porque el `compileOnly` del main no se hereda): **cubierto** = matemática
-  pura (`AnvilFormulas`, `EnchantFormulas` con `filledSegments`/`progressBar`, `Cost`/`CostType`,
+  pura (`AnvilFormulas`, `EnchantFormulas` con `geometricCost`/`filledSegments`/`progressBar`,
+  `XpMath`, `Cost`/`CostType`,
   `BookshelfScanner.lineCells`, `EnchantingLogic.classifyBlock`) + MockBukkit (`AnvilLogic.calculateResult`
   con el `AnvilEnchantGate`, `BookshelfScanner.scan`, `CostService`). ⚠️ **NO testeable con MockBukkit**
   todo lo que llama a EcoEnchants/EcoSkills (`analyze()`, `nextStep`, `TransferLogic.computeOffers`,

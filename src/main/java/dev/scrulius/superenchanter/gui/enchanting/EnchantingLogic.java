@@ -372,9 +372,12 @@ public final class EnchantingLogic {
         if (override.xpCost() != null) {
             amount = Math.max(1, override.xpCost());
         } else {
-            final int curve = EnchantFormulas.xpCostForLevel(config.getBaseXPCost(),
-                    config.getLevelXPMultiplier(), level, config.getCostExponent(),
-                    config.getRarityCostMultiplier(rarityId), config.getMaxXpCost());
+            // The "finishing" premium applies when this rung is the enchantment's
+            // top level — the last step of a ladder is the dearest.
+            final double finalMult = level >= maxLevel ? config.getFinalLevelMultiplier() : 1.0;
+            final int curve = EnchantFormulas.geometricCost(config.getBaseXPCost(),
+                    config.getLevelGrowth(), level, config.getRarityCostMultiplier(rarityId),
+                    finalMult, config.getMaxXpCost());
             amount = Math.max(1, (int) Math.round(curve * override.costMultiplier()));
         }
 

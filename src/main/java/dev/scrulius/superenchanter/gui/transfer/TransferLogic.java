@@ -166,9 +166,11 @@ public final class TransferLogic {
         final double rarityMult = config.isTransferUseRarityMultiplier()
                 ? config.getRarityCostMultiplier(rarityId)
                 : 1.0;
-        final int amount = EnchantFormulas.xpCostForLevel(
-                config.getTransferBaseCost(), config.getTransferLevelMultiplier(),
-                level, config.getTransferCostExponent(), rarityMult, config.getTransferMaxCost());
+        // Same geometric curve as the table, no finishing premium (transfer salvages
+        // an existing enchantment rather than forging the final rung).
+        final int amount = EnchantFormulas.geometricCost(
+                config.getTransferBaseCost(), config.getTransferLevelGrowth(),
+                level, rarityMult, 1.0, config.getTransferMaxCost());
         return new Cost(config.getTransferCostType(), amount);
     }
 

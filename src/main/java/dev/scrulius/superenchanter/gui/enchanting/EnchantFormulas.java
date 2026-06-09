@@ -20,24 +20,36 @@ public final class EnchantFormulas {
     }
 
     /**
-     * Rarity-scaled XP cost for a single enchantment level.
+     * Rarity-scaled, <b>geometric</b> XP cost (in raw experience points) for a
+     * single enchantment level — the "hardcore" curve.
      * <p>
-     * {@code raw = base + levelMultiplier * level^exponent}, scaled by the rarity
-     * multiplier, rounded, then clamped to {@code [1, costCap]}. The cap is what
-     * stops high rarities from demanding an unreachable amount of XP.
+     * {@code raw = base · rarityMultiplier · growth^(level-1) · finalMultiplier},
+     * rounded, then clamped to {@code [1, costCap]}. The geometric {@code growth}
+     * term is the whole point: each level costs {@code growth}× the previous one,
+     * so the top levels explode instead of creeping up linearly (the old
+     * {@code base + mult·level^1.15} curve barely moved). {@code rarityMultiplier}
+     * scales the entire curve per rarity (configured aggressively — a divine is
+     * tens of times a common), and {@code finalMultiplier} is the "finishing"
+     * premium the caller passes when {@code level} is the enchantment's maximum
+     * (the last rung is the dearest); pass {@code 1.0} for no premium.
+     * <p>
+     * The cap is applied to the raw value <em>before</em> rounding so a runaway
+     * {@code growth^level} can never overflow the {@code int} return.
      *
-     * @param base             flat base cost
-     * @param levelMultiplier  weight of the level term
+     * @param base             base cost of level 1 of the cheapest rarity (points)
+     * @param growth           geometric per-level factor ({@code >1}; e.g. 2.0 = doubles each level)
      * @param level            the enchantment level (1-based)
-     * @param exponent         curve exponent applied to the level
-     * @param rarityMultiplier per-rarity cost multiplier
-     * @param costCap          hard upper bound on the cost
-     * @return the final XP cost, never below 1 nor above {@code costCap}
+     * @param rarityMultiplier per-rarity cost multiplier (scales the whole curve)
+     * @param finalMultiplier  finishing premium when this is the max level (1.0 = none)
+     * @param costCap          hard upper bound on the cost (points)
+     * @return the final XP point cost, never below 1 nor above {@code costCap}
      */
-    public static int xpCostForLevel(double base, double levelMultiplier, int level,
-                                     double exponent, double rarityMultiplier, int costCap) {
-        final double raw = base + levelMultiplier * Math.pow(level, exponent);
-        return Math.max(1, Math.min(costCap, (int) Math.round(raw * rarityMultiplier)));
+    public static int geometricCost(double base, double growth, int level,
+                                    double rarityMultiplier, double finalMultiplier, int costCap) {
+        final double raw = base * rarityMultiplier
+                * Math.pow(growth, Math.max(0, level - 1)) * finalMultiplier;
+        final long rounded = Math.round(Math.min(raw, (double) costCap));
+        return (int) Math.max(1L, rounded);
     }
 
     /**

@@ -51,8 +51,8 @@ public final class PluginConfig {
     private CostType enchantingCostType;
     private Map<String, CostType> rarityCostTypes;
     private int baseXPCost;
-    private int levelXPMultiplier;
-    private double costExponent;
+    private double levelGrowth;
+    private double finalLevelMultiplier;
     private int maxXpCost;
     private int enchantsPerPage;
     private List<String> disabledEnchantments;
@@ -81,8 +81,7 @@ public final class PluginConfig {
     private double transferExtractMultiplier;
     private CostType transferCostType;
     private int transferBaseCost;
-    private int transferLevelMultiplier;
-    private double transferCostExponent;
+    private double transferLevelGrowth;
     private int transferMaxCost;
     private boolean transferUseRarityMultiplier;
     private boolean transferRequireSameMaterial;
@@ -317,11 +316,11 @@ public final class PluginConfig {
     /** @return the base XP cost for enchanting table operations */
     public int getBaseXPCost() { return baseXPCost; }
 
-    /** @return the XP cost multiplied by the enchantment level */
-    public int getLevelXPMultiplier() { return levelXPMultiplier; }
+    /** @return the geometric per-level growth factor (each level costs this × the previous) */
+    public double getLevelGrowth() { return levelGrowth; }
 
-    /** @return the exponent applied to the level in the cost curve (1.0 = linear) */
-    public double getCostExponent() { return costExponent; }
+    /** @return the finishing premium multiplier applied when a rung is the enchantment's max level */
+    public double getFinalLevelMultiplier() { return finalLevelMultiplier; }
 
     /** @return the hard cap on XP-level cost for a single enchant operation */
     public int getMaxXpCost() { return maxXpCost; }
@@ -489,11 +488,8 @@ public final class PluginConfig {
     /** @return the flat base cost of a transfer */
     public int getTransferBaseCost() { return transferBaseCost; }
 
-    /** @return the per-level multiplier in the transfer cost curve */
-    public int getTransferLevelMultiplier() { return transferLevelMultiplier; }
-
-    /** @return the exponent applied to the level in the transfer cost curve (1.0 = linear) */
-    public double getTransferCostExponent() { return transferCostExponent; }
+    /** @return the geometric per-level growth factor for the transfer cost curve */
+    public double getTransferLevelGrowth() { return transferLevelGrowth; }
 
     /** @return the hard cap on a single transfer's cost */
     public int getTransferMaxCost() { return transferMaxCost; }
@@ -622,10 +618,11 @@ public final class PluginConfig {
         enchantingCostType = CostType.fromString(config.getString("enchanting.cost-type", "XP"));
         rarityCostTypes = parseRarityCostTypes();
         // XP amounts are raw experience POINTS, not levels (see CostService#deduct).
-        baseXPCost = config.getInt("enchanting.base-xp-cost", 375);
-        levelXPMultiplier = config.getInt("enchanting.level-xp-multiplier", 275);
-        costExponent = config.getDouble("enchanting.cost-exponent", 1.15);
-        maxXpCost = config.getInt("enchanting.max-xp-cost", 12500);
+        // Geometric curve: base · rarityMult · growth^(level-1) · finalMult, capped.
+        baseXPCost = config.getInt("enchanting.base-xp-cost", 500);
+        levelGrowth = Math.max(1.0, config.getDouble("enchanting.level-growth", 2.0));
+        finalLevelMultiplier = Math.max(1.0, config.getDouble("enchanting.final-level-multiplier", 1.5));
+        maxXpCost = config.getInt("enchanting.max-xp-cost", 150000);
         enchantsPerPage = config.getInt("enchanting.enchantments-per-page", 8);
         disabledEnchantments = config.getStringList("enchanting.disabled-enchantments");
         defaultRarityMultiplier = config.getDouble("enchanting.default-rarity-multiplier", 1.0);
@@ -812,10 +809,9 @@ public final class PluginConfig {
         transferAllowExtract = config.getBoolean("transfer.allow-extract", true);
         transferCostType = CostType.fromString(config.getString("transfer.cost-type", "XP"));
         // XP amounts are raw experience POINTS, not levels (see CostService#deduct).
-        transferBaseCost = config.getInt("transfer.base-cost", 500);
-        transferLevelMultiplier = config.getInt("transfer.level-multiplier", 400);
-        transferCostExponent = config.getDouble("transfer.cost-exponent", 1.15);
-        transferMaxCost = config.getInt("transfer.max-cost", 20000);
+        transferBaseCost = config.getInt("transfer.base-cost", 400);
+        transferLevelGrowth = Math.max(1.0, config.getDouble("transfer.level-growth", 1.8));
+        transferMaxCost = config.getInt("transfer.max-cost", 60000);
         transferUseRarityMultiplier = config.getBoolean("transfer.use-rarity-multiplier", true);
         transferRequireSameMaterial = config.getBoolean("transfer.require-same-material", false);
         transferExtractMultiplier = config.getDouble("transfer.extract-cost-multiplier", 2.0);

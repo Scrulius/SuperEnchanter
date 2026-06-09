@@ -15,48 +15,64 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class EnchantFormulasTest {
 
     @Nested
-    @DisplayName("xpCostForLevel")
-    class XpCostForLevel {
+    @DisplayName("geometricCost")
+    class GeometricCost {
 
         @Test
-        @DisplayName("linear curve (exponent 1) with no rarity scaling")
-        void linearCurve() {
-            // base 10 + 5 * 3^1 = 25, rarity 1.0
-            assertEquals(25, EnchantFormulas.xpCostForLevel(10, 5, 3, 1.0, 1.0, 1000));
+        @DisplayName("level 1 is just base × rarity (growth^0 = 1)")
+        void levelOneIsBase() {
+            assertEquals(500, EnchantFormulas.geometricCost(500, 2.0, 1, 1.0, 1.0, 1_000_000));
+            assertEquals(20000, EnchantFormulas.geometricCost(500, 2.0, 1, 40.0, 1.0, 1_000_000));
         }
 
         @Test
-        @DisplayName("quadratic curve (exponent 2)")
-        void quadraticCurve() {
-            // base 10 + 5 * 4^2 = 10 + 80 = 90
-            assertEquals(90, EnchantFormulas.xpCostForLevel(10, 5, 4, 2.0, 1.0, 1000));
+        @DisplayName("each level multiplies the previous by the growth factor")
+        void geometricGrowth() {
+            // base 500, growth 2 → 500, 1000, 2000, 4000, 8000
+            assertEquals(1000, EnchantFormulas.geometricCost(500, 2.0, 2, 1.0, 1.0, 1_000_000));
+            assertEquals(2000, EnchantFormulas.geometricCost(500, 2.0, 3, 1.0, 1.0, 1_000_000));
+            assertEquals(8000, EnchantFormulas.geometricCost(500, 2.0, 5, 1.0, 1.0, 1_000_000));
         }
 
         @Test
-        @DisplayName("rarity multiplier scales the raw cost")
+        @DisplayName("rarity multiplier scales the whole curve")
         void rarityScales() {
-            // (10 + 5*2) = 20, * 2.5 = 50
-            assertEquals(50, EnchantFormulas.xpCostForLevel(10, 5, 2, 1.0, 2.5, 1000));
+            // épico ×6 at level 3: 500 * 6 * 2^2 = 12000
+            assertEquals(12000, EnchantFormulas.geometricCost(500, 2.0, 3, 6.0, 1.0, 1_000_000));
         }
 
         @Test
-        @DisplayName("the cap stops the legendary explosion")
+        @DisplayName("the finishing premium multiplies the max-level rung")
+        void finalPremium() {
+            // common level 5 final: 500 * 1 * 2^4 * 1.5 = 12000
+            assertEquals(12000, EnchantFormulas.geometricCost(500, 2.0, 5, 1.0, 1.5, 1_000_000));
+        }
+
+        @Test
+        @DisplayName("the cap clamps the runaway high-level cost")
         void cappedAtMax() {
-            // a steep curve that would blow past the cap
-            assertEquals(30, EnchantFormulas.xpCostForLevel(10, 50, 10, 2.0, 3.0, 30));
+            // 500 * 40 * 2^4 = 320000, capped at 150000
+            assertEquals(150000, EnchantFormulas.geometricCost(500, 2.0, 5, 40.0, 1.0, 150000));
+        }
+
+        @Test
+        @DisplayName("an enormous level can never overflow the int return")
+        void noOverflow() {
+            // 2^200 would overflow; the cap is applied before rounding
+            assertEquals(150000, EnchantFormulas.geometricCost(500, 2.0, 200, 40.0, 1.5, 150000));
         }
 
         @Test
         @DisplayName("never below 1, even with tiny inputs")
         void flooredAtOne() {
-            assertEquals(1, EnchantFormulas.xpCostForLevel(0, 0, 1, 1.0, 0.0, 1000));
+            assertEquals(1, EnchantFormulas.geometricCost(0, 2.0, 1, 0.0, 1.0, 1000));
         }
 
         @Test
         @DisplayName("result is rounded, not truncated")
         void rounds() {
             // raw 2.6 -> round -> 3 (truncation would give 2)
-            assertEquals(3, EnchantFormulas.xpCostForLevel(2.6, 0, 1, 1.0, 1.0, 1000));
+            assertEquals(3, EnchantFormulas.geometricCost(2.6, 1.0, 1, 1.0, 1.0, 1000));
         }
     }
 
