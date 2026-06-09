@@ -10,7 +10,7 @@
 # ANVIL GUI
 # ─────────────────────────────────────────────
 anvil:
-  gui-title: "<gradient:#3A3F46:#B7BFC9><bold>Yunque</bold></gradient>"
+  gui-title: "<gradient:#3A2A16:#9C6B2E><bold>Yunque</bold></gradient>"
 
   # Info icon (slot 13)
   info-name: "<gradient:#FFB347:#FF8C00><bold>Información</bold></gradient>"
