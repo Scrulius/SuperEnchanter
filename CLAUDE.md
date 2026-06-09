@@ -264,6 +264,10 @@ Objetivo: una **bookshelf vanilla REAL** (sin resource pack) que da más poder y
     (si la marca no apunta a una bookshelf, la limpia; nunca miente en el poder).
 - `BookshelfScanner` da `config.getEnchantedBookshelfPower(id)` a las marcadas (en vez del 1
   normal), cacheando las marcas por chunk durante el escaneo.
+- **Air-gap = line-of-sight real** (`BookshelfScanner.lineCells`, pura/testeada): la línea recta
+  mesa→bloque debe pasar solo por aire; un bloque de poder tras una pared no cuenta. Más estricto que
+  el viejo heurístico (que solo miraba la celda pegada) → librerías muy empaquetadas pueden perder algo
+  de poder vanilla (las encantadas son la fuente real, impacto menor).
 - Config `enchanting.enchanted-bookshelves: { libreria_encantada: 10 }` (un solo tipo, +10 poder;
   el item MM es `CHISELED_BOOKSHELF`, se sella con libros y se bloquea su click derecho — ver abajo).
 - **Chiseled selladas**: la librería es una `CHISELED_BOOKSHELF`. Al colocarla (`sealIfChiseled`)
@@ -393,7 +397,7 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   (libreforge es plugin de runtime, NO dep de compilación — está en `plugins/libreforge/versions/`;
   `getMultiplier` es `protected` → `setAccessible`); degrada a ×1.0 (=+0%) si algo falla. ⚠️ Limitación:
   un plugin que suba XP con su PROPIO listener de `PlayerSkillXPGainEvent` (en vez del efecto/permiso
-  estándar) NO se previsualiza. El maná también sale en el panel de `/skills` (config EcoSkills).
+  estándar) NO se previsualiza.
 - **Placeholders (`integration/SuperEnchanterPlaceholders`)**: expansion de PlaceholderAPI
   `superenchanter` (softdepend + compileOnly al jar de PAPI; solo se registra/carga si PAPI está,
   guarda en `onEnable`). Expone los bonus de Magia con valores REALES para configs ajenas (la
@@ -570,48 +574,19 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 - **Sonidos por acción**: transferir/extraer ya NO comparten sonido con encantar
   (`transfer-success`/`extract-success`); abrir/cerrar usa barrel, no cofre. **`enchant-fail`**
   (sonido + partícula `LARGE_SMOKE`) para el fallo del encantamiento probabilístico.
-- **`success-chance` default ON** (norma "plugin privado": es la experiencia base de DarkMines). El
-  slot de potenciador/sello SOLO existe con la feature ON (`getInputSlots()` lo añade
-  condicionalmente); con OFF (`false`, kill-switch temporal), slot 37 es relleno decorativo y se
-  vuelve al 100% garantizado.
 
 ---
 
-## Ideas pendientes (no hechas, para retomar)
-- ~~CostResolver compartido yunque+mesa~~ HECHO: paquete `economy/` (`CostService`); la mesa cobra
-  en `enchanting.cost-type` (XP/VAULT/PLAYER_POINTS).
-- ~~Progresión nivel-a-nivel~~ DESCARTADO: se mantienen las 3 tiers de la mesa. En su lugar el coste
-  es ACUMULATIVO (`EnchantFormulas.cumulativeCost`) — saltar a V cuesta la suma de I→V — que es el
-  sumidero real sin el tedio de subir de uno en uno. Las librerías encantadas ya son la "progresión"
-  de verdad (gate de poder por rareza).
-- Tests JUnit (`./gradlew.bat test`, JUnit 5): HECHO. Matemática pura (`AnvilFormulas`,
-  `EnchantFormulas` incl. `cumulativeCost`, `Cost`/`CostType`) + **MockBukkit**
-  (`org.mockbukkit.mockbukkit:mockbukkit-v26.1.2:4.113.1`, paper-api declarada aparte como
-  `testImplementation` porque el `compileOnly` del main no se hereda) para `AnvilLogic.calculateResult`
-  (merge real con DataComponents + conflictos vanilla + el `AnvilEnchantGate` inyectado, probado con
-  gates lambda: rechazo→conflicto, cap de nivel, `ALLOW_ALL`=vanilla), `BookshelfScanner.scan` (suma
-  de poder + override de librería vía PDC de chunk) y `CostService` (XP real; Vault/PP ausentes → no
-  pagable). La **precedencia de `BlockReason`** está extraída a `EnchantingLogic.classifyBlock`
-  (puro, sin Bukkit/eco) y cubierta por `EnchantingLogicTest` (9 casos: maxed/upgrade/precedencia
-  required>conflict>type-limit). La geometría de **line-of-sight del escáner** (`BookshelfScanner.
-  lineCells`, pura) la cubre `BookshelfScannerLineCellsTest`, y la **lógica de sello por rareza**
-  (`PluginConfig.Booster.percentFor`) la cubre `BoosterTest` (ambos sin Bukkit). PENDIENTE: el resto
-  de `analyze()` (scan + resolución de targets/conflicts vía eco) y `TransferLogic.computeOffers` — NO
-  testeables con MockBukkit porque llaman a EcoEnchants (`com.willfp.*` es compileOnly →
-  `NoClassDefFoundError` en runtime de test; haría falta un harness con eco real (servidor real, no
-  MockBukkit) — sigue siendo el hueco grande de cobertura, no resuelto.
-- ~~Comando debug `/se bookshelf`~~ HECHO (+ `/se give`, `/se book`, `/se audit`) en
-  `command/SuperEnchanterCommand`.
-- ~~Encantamiento probabilístico + sellos de garantía por rareza (MythicMobs)~~ HECHO
-  (`enchanting.success-chance`, default ON). Pendiente opcional: **orbe gacha** suelto (click
-  derecho → encantamiento aleatorio de una rareza), no implementado.
-- ~~Obtención/economía de maldiciones~~ HECHO: tirada de maldición al encantar (sin prevención) +
-  Sello Purificador (yunque) como única cura — ver `curse-chance`/`curse-removal`.
-- ~~No hay encantamientos "gratis" en loot natural~~ HECHO: `LootControlListener` (`loot-control`).
-- ~~Air-gap del escáner es heurístico~~ HECHO: **line-of-sight real** (`BookshelfScanner.lineCells`,
-  pura/testeada). La línea recta mesa→bloque se muestrea y TODA celda intermedia debe ser aire; un
-  bloque que da poder escondido tras una pared ya NO cuenta (antes solo se miraba la celda pegada al
-  bloque → se colaban los de detrás). ⚠️ Es más estricto: setups con librerías muy empaquetadas (sin
-  aire entre anillos profundos) pueden perder algo de poder vanilla — las librerías encantadas siguen
-  siendo la fuente real de poder, así que el impacto es menor; rebalancea radios/poder si hace falta.
-- Pre-índice de encantamientos por categoría al arrancar (si hay lag con muchísimos EcoEnchants).
+## Pendientes / cobertura de tests
+- **Orbe gacha** (item suelto, clic derecho → encantamiento aleatorio de una rareza): NO implementado.
+- **Pre-índice** de encantamientos por categoría al arrancar (solo si hay lag con muchísimos EcoEnchants).
+- **Tests** (JUnit 5 + MockBukkit `org.mockbukkit:mockbukkit-v26.1.2`; paper-api declarada como
+  `testImplementation` aparte porque el `compileOnly` del main no se hereda): **cubierto** = matemática
+  pura (`AnvilFormulas`, `EnchantFormulas`+`cumulativeCost`, `Cost`/`CostType`, `BookshelfScanner.lineCells`,
+  `Booster.percentFor`, `EnchantingLogic.classifyBlock`) + MockBukkit (`AnvilLogic.calculateResult` con el
+  `AnvilEnchantGate`, `BookshelfScanner.scan`, `CostService`). ⚠️ **NO testeable con MockBukkit** todo lo
+  que llama a EcoEnchants/EcoSkills (`analyze()`, `TransferLogic.computeOffers`, Magia, maldiciones):
+  `com.willfp.*` es compileOnly → `NoClassDefFoundError` en runtime de test; haría falta un harness con
+  eco REAL (servidor, no Mock). Es el hueco grande de cobertura, sin resolver.
+- **Diseño descartado**: progresión nivel-a-nivel → en su lugar coste ACUMULATIVO (`cumulativeCost`,
+  saltar a V = suma I→V); las librerías encantadas son la progresión real (gate de poder por rareza).
