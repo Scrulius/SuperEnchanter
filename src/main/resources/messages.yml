@@ -366,7 +366,7 @@ enchant-icons:
   # Solo se muestra si Magia está activa. Reúne TODOS los bonus en un sitio en vez de
   # repetirlos bajo cada encantamiento. Placeholders: {level} nivel de Magia, {success}
   # +% éxito, {discount} -% coste, {refund} % reembolso, {mana} maná máx, {xp} +% XP de
-  # Magia por la armadura puesta.
+  # Magia total (de cualquier fuente: armadura, boosters, etc.).
   stats-head-name: "<gradient:#C084FC:#7C3AED><bold>✦ Tus estadísticas de Magia</bold></gradient>"
   stats-head-lore:
     - "<#6C7293>Nivel de <#C084FC>Magia<#6C7293>: <#E8E8FF>{level}"
@@ -375,7 +375,7 @@ enchant-icons:
     - "<#FFD93D>✔ -{discount}%<#6C7293> coste de encantar"
     - "<#C084FC>♻ {refund}%<#6C7293> reembolso al fallar"
     - "<#5BCEFA>✦ +{mana}<#6C7293> maná máximo"
-    - "<#FF9F45>📖 +{xp}%<#6C7293> XP de Magia <#6C7293>(armadura)"
+    - "<#FF9F45>📖 +{xp}%<#6C7293> XP de Magia"
 
   # Unavailable/locked enchantment (gray dye)
   unavailable-name: "<#FF6B6B>{name}"
