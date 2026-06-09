@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 9
+config-version: 10
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -160,15 +160,18 @@ enchanting:
     # Si true, el potenciador SOLO se gasta cuando el encantamiento entra (en vez de
     # consumirse en cada intento). Por defecto se gasta siempre (más punitivo/gacha).
     boosters-consumed-on-success-only: false
-    # Probabilidad base por rareza de EcoEnchants.
-    # Divino es premium (se paga con moneda real) → 100% para no perder la moneda
-    # premium por RNG. Sube la dificultad bajando estos valores si quieres.
+    # Probabilidad base por rareza de EcoEnchants. La rareza alta es un gamble real:
+    # legendario/divino entran pocas veces sin un sello de garantía (success-chance.
+    # boosters) o sin nivel de Magia que suba el %. ⚠️ Divino es premium (PlayerPoints):
+    # con 10% un fallo quema moneda real, así que para divino la jugada segura es el
+    # Sello Divino (garantía); el 10% es para quien arriesga. (El Reembolso Arcano de
+    # Magia devuelve parte del coste al fallar — mitiga el sumidero.)
     by-rarity:
-      comun: 100
-      raro: 75
-      epico: 55
-      legendario: 35
-      divino: 100
+      comun: 80
+      raro: 65
+      epico: 35
+      legendario: 20
+      divino: 10
     # Items POTENCIADORES de MythicMobs ("sellos"): se meten en el slot de potenciador
     # de la mesa y SUMAN % de éxito. Cada sello se ATA a una rareza: solo aporta (y
     # solo se consume) cuando el encantamiento es de ESA rareza; con otra rareza no
@@ -248,14 +251,17 @@ enchanting:
     refund:
       per-level: 0.6
       max-percent: 30
-    # Carril 5 (opcional) — gating: exige nivel mínimo de Magia para encantar por rareza.
-    # Por defecto OFF (Magia mejora, no bloquea). Actívalo si quieres puerta de progresión.
+    # Carril 5 — gating: HARD-GATE por nivel de Magia. legendario y divino NO se pueden
+    # encantar sin nivel suficiente (salgan las odds que salgan). Común/raro/épico NO se
+    # gatean: su "puerta" es el % de éxito (success-chance.by-rarity), no un candado, para
+    # no atascar al jugador en rarezas bajas. El icono muestra el candado + nivel requerido
+    # antes de clicar (no falla al hacer clic). Si Magia se desactiva (sin SuperCore), el
+    # gate cae solo (no bloquea a nadie). Pon enabled:false para quitar todos los candados.
     gating:
-      enabled: false
+      enabled: true
       required-level:
-        epico: 10
-        legendario: 25
-        divino: 40
+        legendario: 20
+        divino: 35
 
   # ── Iconos de categoría ──
   # Material del icono de cada categoría (tipo de EcoEnchants) en el primer nivel

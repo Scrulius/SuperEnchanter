@@ -332,8 +332,15 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
     de coste de la mesa**: cobro (`handleLevelClick`), icono de nivel
     (`EnchantingLogic.createLevelOfferIcon`) y mensaje "no te alcanza" (`sendResourceError`), para
     que lo mostrado = lo cobrado (−0.4%/nivel, tope −20%).
-  - **C5 gating** (`gating.enabled`, default **OFF**): exige nivel mínimo de Magia por rareza
-    (`canEnchant`/`requiredLevel`); bloqueado → actionbar `enchanting.magia-locked`.
+  - **C5 gating** (`gating.enabled`, default **ON**): HARD-GATE por nivel de Magia, **solo
+    legendario (20) y divino (35)** — común/raro/épico NO se gatean (su "puerta" es el % de éxito,
+    no un candado, para no atascar al jugador en rarezas bajas). El icono de nivel se renderiza como
+    **barrera con el nivel requerido** (`enchant-icons.locked-*`) en `createLevelOfferIcon` ANTES de
+    clicar (no falla al clicar), y `handleLevelClick` lo re-bloquea con actionbar
+    `enchanting.magia-locked`. Si Magia se desactiva (sin SuperCore), `canEnchant` devuelve true → el
+    gate cae solo (no bloquea a nadie). ⚠️ Diseño: la rareza alta es un **gamble de % de éxito**
+    (`by-rarity` rebalanceado a 80/65/35/20/10), no solo un candado; divino premium a 10% → el Sello
+    Divino (garantía) es la jugada segura, el Reembolso Arcano mitiga el fallo.
 - **XP por operación** (`grantXp`, devuelve la XP dada): `niveles_ganados × xp(rareza)` + una
   fracción (`xp-fail-fraction`, 0.25) si un peldaño falló ("aprendes del error"). Solo si se cobró
   algo. **Feedback**: el action bar de encantar (success/partial/fail/cursed) anexa el sufijo
@@ -436,7 +443,7 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 9`. Corre en cada reload.
+  conserva comentarios. `config-version: 10`. Corre en cada reload.
 - **`enchanting.rarity-cost-type`** (mapa rareza→moneda): override del `cost-type` global por rareza
   (las que no aparezcan heredan el global). Se usa para que **Divino se cobre en PLAYER_POINTS**
   (premium) mientras el resto sigue en XP. Lo resuelve `PluginConfig.getEnchantingCostType(rarityId)`

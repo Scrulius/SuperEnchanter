@@ -350,6 +350,13 @@ enchant-icons:
   # Aviso cuando hay un sello en la ranura pero NO aplica a este encantamiento porque
   # está atado a otra rareza (aporta 0 y no se gasta). {rarity}=rareza del sello.
   lore-seal-mismatch: "<#6C7293>✦ <#FF6B6B>Este sello solo afecta a <#FFB347>{rarity}"
+  # Icono de nivel BLOQUEADO por hard-gate de Magia (legendario/divino con
+  # success-chance.magia.gating). Sustituye al icono normal cuando el jugador no llega
+  # al nivel de Magia requerido. {required}=nivel exigido, {level}=nivel actual del jugador.
+  locked-name: "<#6C7293><bold>🔒 {name}</bold>"
+  locked-lore:
+    - "<#FF6B6B>🔒 Requiere <#C084FC>Magia nivel {required}"
+    - "<#6C7293>Tu nivel de Magia: <#A8B2D1>{level}"
   available-lore-cost: "<#A8B2D1>Coste: <#43E97B>{cost}"
   available-lore-power: "<#A8B2D1>Poder requerido: <#43E97B>{power}"
   available-lore-reagent: "<#A8B2D1>Reactivo: <#43E97B>{amount}x {item}"

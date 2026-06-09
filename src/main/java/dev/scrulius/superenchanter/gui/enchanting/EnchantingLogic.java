@@ -548,9 +548,25 @@ public final class EnchantingLogic {
         MessagesConfig msg = plugin.getMessages();
         // Single-level enchantments show no roman numeral ("Vitalidad", not "Vitalidad I").
         final String levelText = offer.levelSuffix();
+        final var magia = plugin.getMagiaService();
+
+        // Hard gate (Magia carril 5): a locked rarity (legendario/divino) shows a barrier
+        // with the required level UP FRONT, instead of a clickable offer that bounces on
+        // click. Maxed items skip this (nothing left to enchant).
+        if (!offer.alreadyApplied() && magia != null && magia.isEnabled()
+                && !magia.canEnchant(player, offer.rarityId())) {
+            final List<String> lockedLore = msg.formatList("enchant-icons.locked-lore",
+                    Map.of("{required}", String.valueOf(magia.requiredLevel(offer.rarityId())),
+                            "{level}", String.valueOf(magia.level(player))));
+            return new ItemBuilder(Material.BARRIER)
+                    .name(msg.format("enchant-icons.locked-name",
+                            Map.of("{name}", offer.displayName() + levelText)))
+                    .lore(lockedLore)
+                    .build();
+        }
+
         // Discounted cost actually shown/charged for this player (permission + Carril 2 Magia).
         Cost cost = plugin.getCostService().effectiveCost(player, offer.cost());
-        final var magia = plugin.getMagiaService();
         if (magia != null && magia.isEnabled()) cost = magia.applyDiscount(player, cost);
         final boolean canAfford = plugin.getCostService().canAfford(player, cost);
         final boolean hasReagent = hasReagent(player, offer.reagent());
