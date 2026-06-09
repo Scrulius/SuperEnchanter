@@ -373,10 +373,16 @@ nivel mejora el propio encantar. Diseño completo en [`docs/PLAN_MAGIA.md`](docs
   del viewer vía `ItemBuilder.skullOwner`) arriba del input: nivel de Magia, +éxito, −coste, reembolso,
   maná y **+% XP de Magia de la armadura puesta** (`enchant-icons.stats-head-*`). Solo aparece si Magia
   está activa; se refresca en `fillDecoration` y tras encantar (puede subir de nivel). Helpers de
-  display: `MagiaService.discountPercent/refundChance/manaBonus/xpBonusPercent`. El **XP de armadura**
-  (`xpBonusPercent`) lee la armadura puesta y cruza las keys con `enchanting.magia.xp-boost-enchants`
-  (mapa key→fracción, SOLO para mostrar; el efecto real lo aplica eco vía `skill_xp_multiplier`),
-  apilando multiplicativo igual que eco. El maná también sale en el panel de `/skills` (config EcoSkills).
+  display: `MagiaService.discountPercent/refundChance/manaBonus/xpBonusPercent`. El **+% XP de Magia**
+  (`xpBonusPercent`) se lee **NATIVO** de EcoSkills vía `SuperCore.ecoSkills().effectiveSkillXpMultiplier`
+  = `getSkillXPMultiplier` (booster por permiso, global) × el total del efecto libreforge
+  `skill_xp_multiplier` para la skill (`EffectSkillXpMultiplier.INSTANCE.getMultiplier(dispatcher, skill)`,
+  el mismo valor que `gainXP` aplica). Así refleja **cualquier** fuente automáticamente (armadura de mago,
+  boosters comprados, otros plugins que usen ese efecto) sin lista hardcodeada. Se lee por **reflexión**
+  (libreforge es plugin de runtime, NO dep de compilación — está en `plugins/libreforge/versions/`;
+  `getMultiplier` es `protected` → `setAccessible`); degrada a ×1.0 (=+0%) si algo falla. ⚠️ Limitación:
+  un plugin que suba XP con su PROPIO listener de `PlayerSkillXPGainEvent` (en vez del efecto/permiso
+  estándar) NO se previsualiza. El maná también sale en el panel de `/skills` (config EcoSkills).
 - **Placeholders (`integration/SuperEnchanterPlaceholders`)**: expansion de PlaceholderAPI
   `superenchanter` (softdepend + compileOnly al jar de PAPI; solo se registra/carga si PAPI está,
   guarda en `onEnable`). Expone los bonus de Magia con valores REALES para configs ajenas (la

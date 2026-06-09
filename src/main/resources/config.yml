@@ -262,14 +262,9 @@ enchanting:
       required-level:
         legendario: 20
         divino: 35
-    # Encantamientos de armadura que suben la XP de Magia. Esto es SOLO para MOSTRAR el
-    # bonus en la cabeza de estadísticas de la mesa; el efecto REAL lo aplica EcoEnchants
-    # vía el efecto skill_xp_multiplier de cada encantamiento. key del encantamiento ->
-    # fracción de bonus (0.15 = +15%). Se apilan multiplicativo (igual que eco). Si añades
-    # más encantamientos de XP, regístralos aquí para que la cabeza muestre el total real.
-    xp-boost-enchants:
-      tunica_de_mago: 0.15
-      sombrero_de_mago: 0.25
+    # (El bonus de XP de Magia que muestra la cabeza de estadísticas de la mesa se lee
+    #  NATIVO de EcoSkills — boosters por permiso × efecto skill_xp_multiplier — así que
+    #  refleja CUALQUIER fuente automáticamente; no hay lista que mantener aquí.)
 
   # ── Iconos de categoría ──
   # Material del icono de cada categoría (tipo de EcoEnchants) en el primer nivel
