@@ -103,7 +103,7 @@ enchanting:
   table-deco-name: "<gradient:#C084FC:#A855F7><bold>Mesa de Encantamientos</bold></gradient>"
   table-deco-lore:
     - "<#A8B2D1>Coloca un ítem en el slot"
-    - "<#A8B2D1>de arriba para ver los"
+    - "<#A8B2D1>de la derecha para ver los"
     - "<#A8B2D1>encantamientos disponibles."
 
   # Close button
