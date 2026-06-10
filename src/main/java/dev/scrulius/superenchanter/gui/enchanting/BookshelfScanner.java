@@ -184,9 +184,9 @@ public final class BookshelfScanner {
         final int samples = steps * 4; // fine enough to land on every crossed cell
         for (int i = 1; i < samples; i++) {
             final double t = (double) i / samples;
-            final int bx = (int) Math.round(dx * t);
-            final int by = (int) Math.round(dy * t);
-            final int bz = (int) Math.round(dz * t);
+            final int bx = roundAwayFromZero(dx * t);
+            final int by = roundAwayFromZero(dy * t);
+            final int bz = roundAwayFromZero(dz * t);
             if (bx == 0 && by == 0 && bz == 0) {
                 continue; // still inside the table's own cell
             }
@@ -205,5 +205,17 @@ public final class BookshelfScanner {
             }
         }
         return cells;
+    }
+
+    /**
+     * Rounds half AWAY from zero, so the traced cells are mirror-symmetric around the
+     * table. {@code Math.round} rounds half UP ({@code round(0.5)=1} but
+     * {@code round(-0.5)=0}), which made the line to a negative-side corner clip
+     * through different cells than its positive mirror — two diagonal corners of the
+     * standard shelf ring were blocked by their own neighbouring shelves while the
+     * other two were not.
+     */
+    private static int roundAwayFromZero(double v) {
+        return (int) (v < 0 ? -Math.round(-v) : Math.round(v));
     }
 }

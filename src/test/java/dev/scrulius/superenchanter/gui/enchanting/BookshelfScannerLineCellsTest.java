@@ -77,4 +77,46 @@ class BookshelfScannerLineCellsTest {
         assertEquals(1, BookshelfScanner.lineCells(-2, 0, 0).size());
         assertTrue(contains(BookshelfScanner.lineCells(-2, 0, 0), -1, 0, 0));
     }
+
+    @Test
+    @DisplayName("all four ring corners cross only their own diagonal cell")
+    void ringCornersSymmetric() {
+        // Regression: Math.round rounds half UP (not away from zero), so the lines to
+        // the (-x,+z) and (+x,-z) corners clipped through the NEIGHBOURING shelf cells
+        // of the standard ring — two corners scanned fine and two were blocked.
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+                final List<int[]> cells = BookshelfScanner.lineCells(2 * sx, 0, 2 * sz);
+                assertEquals(1, cells.size(),
+                        "corner (" + 2 * sx + ",0," + 2 * sz + ") must only cross its diagonal cell");
+                assertTrue(contains(cells, sx, 0, sz));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("mirroring any axis mirrors the crossed cells exactly")
+    void fullMirrorSymmetry() {
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dy = -2; dy <= 2; dy++) {
+                for (int dz = -3; dz <= 3; dz++) {
+                    final List<int[]> base = BookshelfScanner.lineCells(dx, dy, dz);
+                    final List<int[]> mirX = BookshelfScanner.lineCells(-dx, dy, dz);
+                    final List<int[]> mirZ = BookshelfScanner.lineCells(dx, dy, -dz);
+                    final List<int[]> mirY = BookshelfScanner.lineCells(dx, -dy, dz);
+                    assertEquals(base.size(), mirX.size(), "X mirror at " + dx + "," + dy + "," + dz);
+                    assertEquals(base.size(), mirZ.size(), "Z mirror at " + dx + "," + dy + "," + dz);
+                    assertEquals(base.size(), mirY.size(), "Y mirror at " + dx + "," + dy + "," + dz);
+                    for (int[] c : base) {
+                        assertTrue(contains(mirX, -c[0], c[1], c[2]),
+                                "X-mirrored cell missing at " + dx + "," + dy + "," + dz);
+                        assertTrue(contains(mirZ, c[0], c[1], -c[2]),
+                                "Z-mirrored cell missing at " + dx + "," + dy + "," + dz);
+                        assertTrue(contains(mirY, c[0], -c[1], c[2]),
+                                "Y-mirrored cell missing at " + dx + "," + dy + "," + dz);
+                    }
+                }
+            }
+        }
+    }
 }

@@ -334,7 +334,11 @@ Objetivo: una **bookshelf vanilla REAL** (sin resource pack) que da más poder y
 - **Air-gap = line-of-sight real** (`BookshelfScanner.lineCells`, pura/testeada): la línea recta
   mesa→bloque debe pasar solo por aire; un bloque de poder tras una pared no cuenta. Más estricto que
   el viejo heurístico (que solo miraba la celda pegada) → librerías muy empaquetadas pueden perder algo
-  de poder vanilla (las encantadas son la fuente real, impacto menor).
+  de poder vanilla (las encantadas son la fuente real, impacto menor). ⚠️ Gotcha arreglado (2026-06):
+  el muestreo usaba `Math.round`, que redondea los .5 hacia ARRIBA (no hacia fuera) → las líneas a las
+  esquinas `(−x,+z)`/`(+x,−z)` atravesaban celdas distintas que sus espejos y quedaban bloqueadas por
+  las librerías VECINAS del propio anillo (2 esquinas contaban, 2 no). Ahora redondea half-away-from-zero
+  (`roundAwayFromZero`), simetría cubierta por test espejo exhaustivo (radio 3).
 - Config `enchanting.enchanted-bookshelves: { libreria_encantada: 10 }` (un solo tipo, +10 poder;
   el item MM es `CHISELED_BOOKSHELF`, se sella con libros y se bloquea su click derecho — ver abajo).
 - **Max power 200** (rebajado de 330, 2026-06: la mesa de 330 exigía un monolito de ~60 bloques de
