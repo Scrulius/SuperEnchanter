@@ -271,12 +271,28 @@ ejecuta TODOS los seleccionados de golpe. El modo lo decide si hay destino o no:
 - **Destino = LIBRO normal** (`Material.BOOK`) → **extraer** los elegidos a **UN** libro encantado (con
   varios stored enchants; gateado por `transfer.allow-extract`). **Consume 1 libro** (el slot de destino
   pasa de `BOOK` a `ENCHANTED_BOOK`; si había stack, devuelve el sobrante y el libro encantado va al
-  jugador). `computeExtractOffers` lista los del donante **excepto maldiciones** (callejón sin salida) y
-  `extractToBook(List)` construye el libro. **Coste extra**: `transfer.extract-cost-multiplier` (default
-  2.0) — extraer crea un libro vendible, cuesta más que mover. ⚠️ El multiplicador escala la **base de la
-  curva** y el `max-cost` capa el importe FINAL (`TransferLogic.extractCost`; antes se multiplicaba
-  DESPUÉS del cap y lo saltaba en silencio — el cap documentado era mentira). `TransferGUI.extractMode`
-  (= destino es libro) cambia botón+acción.
+  jugador). `computeExtractOffers` lista los del donante (las maldiciones aparecen como **rider** no
+  seleccionable, ver abajo) y `extractToBook(List)` construye el libro. **Coste extra**:
+  `transfer.extract-cost-multiplier` (default 2.0) — extraer crea un libro vendible, cuesta más que
+  mover. ⚠️ El multiplicador escala la **base de la curva** y el `max-cost` capa el importe FINAL
+  (`TransferLogic.extractCost`; antes se multiplicaba DESPUÉS del cap y lo saltaba en silencio — el cap
+  documentado era mentira). `TransferGUI.extractMode` (= destino es libro) cambia botón+acción.
+- **Meta portador CERRADO (2026-06)** — encantar sobre un ítem basura → extraer/transferir a la buena
+  ya NO esquiva las maldiciones ni mata el mercado del Sello. Dos piezas (ambas default ON):
+  1. **Maldiciones viajeras** (`transfer.curses-travel`): las maldiciones del donante acompañan
+     SIEMPRE a la magia — se pegan al destino al transferir (si pueden vivir en él, `canEnchant`),
+     se almacenan en el libro al extraer (`TransferLogic.curseRiders`/`applyRidersToBook`) y el
+     **yunque las aplica al fundir un libro/sacrificio maldito** (excepción en `AnvilGUI.gateFor`:
+     encantamiento fuera del analyze + es curse → pasa a su maxLevel; sin esto el yunque "lavaría"
+     la maldición en silencio y desharía todo). UI transparente: icono rider ☠
+     (`TransferBlock.CURSE_RIDER`, calavera no seleccionable), aviso en el botón
+     (`transfer.button-curse-warning`), sufijo `{curses}` en los action bars de éxito y lista
+     "maldiciones que viajarán" en el preview del yunque (`anvil.curse-rider-header`).
+  2. **Tasa por carga mágica** (`transfer.extract-load-per-enchant`, default 1.0): el multiplicador
+     de extracción = `extract-cost-multiplier + load × (N−1)`, con N = encantamientos no-maldición
+     TOTALES del donante (elegidos o no) — rescatar 1 de un pico viejo ×2, vaciar un portador
+     cargado con 5 ×6. SOLO aplica a la extracción a libro; transferir ítem→ítem NO lleva tasa
+     (mejorar tu equipo sigue barato a propósito).
 - **Validación 100% reutilizada**: `TransferLogic.computeOffers` corre `EnchantingLogic.analyze()`
   sobre el DESTINO y cruza con los encantamientos del donante. Así respeta EXACTAMENTE las reglas
   de la mesa (targets/conflictos/requeridos/type-limit/blacklist) sin duplicar nada. `TransferBlock`
@@ -546,8 +562,9 @@ Sistema de riesgo/sumidero alrededor de las maldiciones (`type: curse`), default
   `AnvilGUI.isPurifierSacrifice/showPurifierPreview/attemptPurify` (modo aparte, NO toca el `AnvilLogic`
   puro/testeado). Si el objeto no tiene maldiciones → resultado vacío (no gasta nada).
 - `EcoEnchantsHook.isCurse(ench)` = `type == curse`. `/se give` sugiere el Sello Purificador. NO testeable
-  con MockBukkit (usa eco). Maldiciones siguen fuera de la mesa de oferta (`#curses` blacklist); solo
-  entran por esta tirada.
+  con MockBukkit (usa eco). Maldiciones siguen fuera de la mesa de oferta (`#curses` blacklist); entran
+  por esta tirada o **viajando con magia maldita** (`transfer.curses-travel` — transferencia, extracción
+  a libro y fusión de libro maldito en el yunque; ver "Meta portador CERRADO" en transferencia).
 - **Orden de categorías en la mesa**: `EnchantingLogic.CATEGORY_ORDER`
   (comun→raro→epico→legendario→divino→spell→curse; curse no aparece por blacklist). Tipos no listados
   caen al final, luego alfabético. (Antes ordenaba alfabético = desordenado.)
@@ -573,7 +590,9 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 17`. Corre en cada reload. ⚠️ El rediseño hardcore
+  conserva comentarios. `config-version: 18`. Corre en cada reload. La **v18 (2026-06)** solo AÑADE
+  claves (`transfer.curses-travel`, `transfer.extract-load-per-enchant` + mensajes de rider) →
+  entran solas por auto-merge, sin regenerar. ⚠️ El rediseño hardcore
   **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`, y TODAS las curvas
   de coste al pasar a PUNTOS de XP — mesa/yunque/transfer) que el auto-merge NO pisa, y dejó claves
   muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar `config.yml`** en el server

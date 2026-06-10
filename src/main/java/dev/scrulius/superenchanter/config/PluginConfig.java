@@ -92,6 +92,8 @@ public final class PluginConfig {
     private boolean transferEnabled;
     private boolean transferAllowExtract;
     private double transferExtractMultiplier;
+    private double transferExtractLoadPerEnchant;
+    private boolean transferCursesTravel;
     private CostType transferCostType;
     private int transferBaseCost;
     private double transferLevelGrowth;
@@ -861,10 +863,28 @@ public final class PluginConfig {
         transferUseRarityMultiplier = config.getBoolean("transfer.use-rarity-multiplier", true);
         transferRequireSameMaterial = config.getBoolean("transfer.require-same-material", false);
         transferExtractMultiplier = config.getDouble("transfer.extract-cost-multiplier", 2.0);
+        transferExtractLoadPerEnchant =
+                Math.max(0, config.getDouble("transfer.extract-load-per-enchant", 1.0));
+        transferCursesTravel = config.getBoolean("transfer.curses-travel", true);
     }
 
     /** @return cost multiplier applied to EXTRACTION (vs plain transfer); extraction makes a tradeable book */
     public double getTransferExtractMultiplier() { return transferExtractMultiplier; }
+
+    /**
+     * @return extra extraction multiplier per donor enchantment beyond the first
+     *         (the "magical load" tax — emptying a fully loaded carrier item into
+     *         books is exponentially harder than salvaging one enchant)
+     */
+    public double getTransferExtractLoadPerEnchant() { return transferExtractLoadPerEnchant; }
+
+    /**
+     * @return whether a donor's curses ALWAYS accompany its enchantments: stuck to
+     *         the target on transfer, stored in the book on extraction, and applied
+     *         by the anvil when fusing a cursed book/sacrifice (closes the
+     *         carrier-item curse dodge)
+     */
+    public boolean isTransferCursesTravel() { return transferCursesTravel; }
 
     private void loadAntiDupeSettings() {
         cooldownTicks = config.getInt("anti-dupe.transaction-cooldown-ticks", 5);

@@ -255,6 +255,20 @@ public class AnvilGUI extends AbstractCustomGUI {
             }
         }
 
+        // Curses-travel warning: the player must see which curses the sacrifice
+        // will stick onto the result BEFORE forging.
+        if (config.isTransferCursesTravel()) {
+            final List<Enchantment> riders = cursesOn(sacrifice);
+            if (!riders.isEmpty()) {
+                extra.add("");
+                extra.add(msg.raw("anvil.curse-rider-header"));
+                for (Enchantment curse : riders) {
+                    extra.add(msg.format("anvil.purify-entry",
+                            Map.of("{enchantment}", plugin.getEcoHook().displayNameOrFallback(curse))));
+                }
+            }
+        }
+
         ItemStack preview = resultItem.clone();
         appendLore(preview, extra);
         inventory.setItem(SLOT_RESULT, preview);
@@ -480,8 +494,21 @@ public class AnvilGUI extends AbstractCustomGUI {
 
         gateItem = target.clone();
         // Enchants absent from the analysis don't target this item or are
-        // blacklisted → rejected (0).
-        cachedGate = ench -> caps.getOrDefault(ench, 0);
+        // blacklisted → rejected (0). Exception: with curses-travel ON, a cursed
+        // sacrifice must carry its curses into the result — rejecting them here
+        // would let the anvil silently launder a curse away (undoing the
+        // grindstone's curse-rider rule).
+        final boolean cursesTravel = config.isTransferCursesTravel();
+        cachedGate = ench -> {
+            final Integer cap = caps.get(ench);
+            if (cap != null) {
+                return cap;
+            }
+            if (cursesTravel && plugin.getEcoHook().isCurse(ench)) {
+                return dev.scrulius.superenchanter.util.EnchantmentHelper.getMaxLevel(ench);
+            }
+            return 0;
+        };
         return cachedGate;
     }
 

@@ -8,6 +8,7 @@ import dev.scrulius.superenchanter.gui.AbstractCustomGUI;
 import dev.scrulius.superenchanter.gui.enchanting.EnchantingLogic;
 import dev.scrulius.superenchanter.gui.transfer.TransferLogic.TransferOffer;
 import dev.scrulius.superenchanter.util.AuditLog;
+import dev.scrulius.superenchanter.util.EnchantmentHelper;
 import dev.scrulius.superenchanter.util.ItemBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -246,6 +247,20 @@ public final class TransferGUI extends AbstractCustomGUI {
             enchanted = TransferLogic.applyTransfer(enchanted, o.enchantment(), o.resultLevel());
             moved.append(' ').append(o.enchantment().getKey().getKey()).append('=').append(o.resultLevel());
         }
+        // Curses travel: every donor curse that can live on the target rides along
+        // (taking the magic takes the curse — the carrier-item dodge is closed).
+        int cursesTraveled = 0;
+        for (Map.Entry<Enchantment, Integer> rider
+                : TransferLogic.curseRiders(donor, plugin).entrySet()) {
+            if (EnchantmentHelper.canEnchant(enchanted, rider.getKey())) {
+                final int existing = EnchantmentHelper
+                        .getEnchantments(enchanted).getOrDefault(rider.getKey(), 0);
+                enchanted = TransferLogic.applyTransfer(enchanted, rider.getKey(),
+                        Math.max(existing, rider.getValue()));
+                moved.append(" +curse:").append(rider.getKey().getKey().getKey());
+                cursesTraveled++;
+            }
+        }
         com.willfp.eco.core.display.Display.display(enchanted, player);
         inventory.setItem(SLOT_TARGET, enchanted);
         inventory.setItem(SLOT_DONOR, null);
@@ -255,7 +270,8 @@ public final class TransferGUI extends AbstractCustomGUI {
         plugin.getPluginConfig().getEnchantSuccessParticle().spawn(player.getWorld(),
                 grindstoneBlock.getLocation().add(0.5, 1.0, 0.5));
         player.sendActionBar(msg.parsed("transfer.success",
-                Map.of("{count}", String.valueOf(sel.size()))));
+                Map.of("{count}", String.valueOf(sel.size()),
+                        "{curses}", curseSuffix(cursesTraveled))));
 
         final AuditLog audit = plugin.getAuditLog();
         audit.record(player, "TRANSFER", moved.toString().trim(), cost,
@@ -304,12 +320,19 @@ public final class TransferGUI extends AbstractCustomGUI {
 
         // Build ONE enchanted book holding every selected enchant; consume one plain book
         // and the donor entirely.
-        final ItemStack book = TransferLogic.extractToBook(sel);
-        com.willfp.eco.core.display.Display.display(book, player);
+        ItemStack book = TransferLogic.extractToBook(sel);
         final StringBuilder pulled = new StringBuilder();
         for (TransferOffer o : sel) {
             pulled.append(' ').append(o.enchantment().getKey().getKey()).append('=').append(o.resultLevel());
         }
+        // Curses travel: the donor's curses are stored INTO the book — taking the
+        // magic takes the curse (the carrier-item dodge is closed).
+        final Map<Enchantment, Integer> riders = TransferLogic.curseRiders(donor, plugin);
+        book = TransferLogic.applyRidersToBook(book, riders);
+        for (Enchantment rider : riders.keySet()) {
+            pulled.append(" +curse:").append(rider.getKey().getKey());
+        }
+        com.willfp.eco.core.display.Display.display(book, player);
         inventory.setItem(SLOT_DONOR, null);
         if (bookStack.getAmount() <= 1) {
             inventory.setItem(SLOT_TARGET, book);          // the slot's book becomes the enchanted book
@@ -324,7 +347,8 @@ public final class TransferGUI extends AbstractCustomGUI {
         plugin.getPluginConfig().getEnchantSuccessParticle().spawn(player.getWorld(),
                 grindstoneBlock.getLocation().add(0.5, 1.0, 0.5));
         player.sendActionBar(msg.parsed("transfer.extract-success",
-                Map.of("{count}", String.valueOf(sel.size()))));
+                Map.of("{count}", String.valueOf(sel.size()),
+                        "{curses}", curseSuffix(riders.size()))));
 
         final AuditLog auditEx = plugin.getAuditLog();
         auditEx.record(player, "EXTRACT", pulled.toString().trim(), cost,
@@ -333,6 +357,39 @@ public final class TransferGUI extends AbstractCustomGUI {
 
         updatePreview();
         persistInputItems();
+    }
+
+    /** Action-bar suffix for curses that traveled with the operation ("" when none). */
+    private String curseSuffix(int count) {
+        return count <= 0 ? ""
+                : msg.format("transfer.curse-suffix", Map.of("{count}", String.valueOf(count)));
+    }
+
+    /**
+     * How many donor curses would actually ride along with the current operation:
+     * all of them on extraction (books store anything), only the ones the target
+     * can legally wear on transfer. 0 when curses-travel is off or no donor.
+     */
+    private int travelingRiderCount() {
+        final Map<Enchantment, Integer> riders =
+                TransferLogic.curseRiders(inventory.getItem(SLOT_DONOR), plugin);
+        if (riders.isEmpty()) {
+            return 0;
+        }
+        if (extractMode) {
+            return riders.size();
+        }
+        final ItemStack target = inventory.getItem(SLOT_TARGET);
+        if (target == null || target.getType().isAir()) {
+            return 0;
+        }
+        int count = 0;
+        for (Enchantment curse : riders.keySet()) {
+            if (EnchantmentHelper.canEnchant(target, curse)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /** Puts an item on the cursor, or in the inventory / on the floor if the cursor is busy. */
@@ -447,12 +504,19 @@ public final class TransferGUI extends AbstractCustomGUI {
                     : "transfer.button-ready-name";
             final String loreKey = extractMode ? "transfer.extract-button-ready-lore"
                     : "transfer.button-ready-lore";
+            final List<String> lore = new ArrayList<>(msg.formatList(loreKey,
+                    Map.of("{count}", String.valueOf(sel.size()),
+                            "{cost}", cost.displayText())));
+            // Curses-travel warning: the player must never be surprised by a rider.
+            final int riderCount = travelingRiderCount();
+            if (riderCount > 0) {
+                lore.add(msg.format("transfer.button-curse-warning",
+                        Map.of("{count}", String.valueOf(riderCount))));
+            }
             inventory.setItem(SLOT_TRANSFER,
                     new ItemBuilder(extractMode ? Material.WRITABLE_BOOK : Material.ANVIL)
                             .name(msg.raw(nameKey))
-                            .lore(msg.formatList(loreKey,
-                                    Map.of("{count}", String.valueOf(sel.size()),
-                                            "{cost}", cost.displayText())))
+                            .lore(lore)
                             .glow()
                             .build());
         } else {

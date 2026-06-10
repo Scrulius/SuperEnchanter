@@ -40,9 +40,14 @@ public final class TransferLogic {
         // Utility class
     }
 
-    /** Why a donor enchantment cannot be transferred ({@code NONE} = transferable). */
+    /**
+     * Why a donor enchantment cannot be transferred ({@code NONE} = transferable).
+     * {@code CURSE_RIDER} marks a donor curse when curses-travel is on: not
+     * selectable, but it ALWAYS accompanies whatever the player takes — shown in
+     * the list so the rider is never a surprise.
+     */
     public enum TransferBlock {
-        NONE, NOT_APPLICABLE, CONFLICT, MISSING_REQUIRED, TYPE_LIMIT, ALREADY_OWNED
+        NONE, NOT_APPLICABLE, CONFLICT, MISSING_REQUIRED, TYPE_LIMIT, ALREADY_OWNED, CURSE_RIDER
     }
 
     /**
@@ -124,7 +129,12 @@ public final class TransferLogic {
             List<String> detail = List.of();
             int targetLevel = a != null ? a.currentLevel() : 0;
 
-            if (!materialOk || a == null) {
+            if (config.isTransferCursesTravel() && plugin.getEcoHook().isCurse(ench)) {
+                // Donor curse: not selectable, but it rides along with whatever is
+                // taken (shown in the list so the rider is never a surprise).
+                block = TransferBlock.CURSE_RIDER;
+                targetLevel = 0;
+            } else if (!materialOk || a == null) {
                 // Donor enchant not valid for this target type (or blacklisted, which
                 // analyze() filters out → absent here), or a material mismatch.
                 block = TransferBlock.NOT_APPLICABLE;
@@ -180,14 +190,25 @@ public final class TransferLogic {
      * applied to the FINAL amount, so the configured cap is the real ceiling for
      * any grindstone operation (the old order multiplied after capping, silently
      * doubling past the documented limit).
+     * <p>
+     * The multiplier grows with the donor's <b>magical load</b> (its non-curse
+     * enchant count): {@code extract-cost-multiplier + extract-load-per-enchant ×
+     * (donorLoad − 1)}. Salvaging one enchant from a normal tool barely notices it;
+     * emptying a fully loaded carrier item into books pays the industrial tax.
+     * Plain item→item transfer does NOT carry this tax — upgrading gear stays cheap.
+     *
+     * @param donorLoad the donor's non-curse enchantment count (≥1 in practice)
      */
     @NotNull
-    public static Cost extractCost(@Nullable String rarityId, int level, @NotNull PluginConfig config) {
+    public static Cost extractCost(@Nullable String rarityId, int level, int donorLoad,
+                                   @NotNull PluginConfig config) {
         final double rarityMult = config.isTransferUseRarityMultiplier()
                 ? config.getRarityCostMultiplier(rarityId)
                 : 1.0;
+        final double loadMultiplier = config.getTransferExtractMultiplier()
+                + config.getTransferExtractLoadPerEnchant() * Math.max(0, donorLoad - 1);
         final int amount = EnchantFormulas.geometricCost(
-                config.getTransferBaseCost() * config.getTransferExtractMultiplier(),
+                config.getTransferBaseCost() * loadMultiplier,
                 config.getTransferLevelGrowth(),
                 level, rarityMult, 1.0, config.getTransferMaxCost());
         return new Cost(config.getTransferCostType(), amount);
@@ -224,24 +245,67 @@ public final class TransferLogic {
             return List.of();
         }
         final PluginConfig config = plugin.getPluginConfig();
+        final int donorLoad = nonCurseCount(donorEnchants, plugin);
         final List<TransferOffer> out = new ArrayList<>(donorEnchants.size());
         for (Map.Entry<Enchantment, Integer> entry : donorEnchants.entrySet()) {
             final Enchantment ench = entry.getKey();
-            // Don't let curses be salvaged to a book — they'd be a dead-end (the table
-            // and anvil both refuse to apply them). Curses only enter via the table roll.
+            final int level = entry.getValue();
             if (plugin.getEcoHook().isCurse(ench)) {
+                // With curses-travel ON the curse rides INTO the book (shown as an
+                // unselectable rider); with it OFF it simply dies with the donor.
+                if (config.isTransferCursesTravel()) {
+                    out.add(new TransferOffer(ench, plugin.getEcoHook().displayNameOrFallback(ench),
+                            level, 0, level, plugin.getEcoHook().getRarityId(ench),
+                            new Cost(config.getTransferCostType(), 0),
+                            TransferBlock.CURSE_RIDER, List.of()));
+                }
                 continue;
             }
-            final int level = entry.getValue();
             final String name = plugin.getEcoHook().displayNameOrFallback(ench);
             final String rarityId = plugin.getEcoHook().getRarityId(ench);
-            final Cost cost = extractCost(rarityId, level, config);
+            final Cost cost = extractCost(rarityId, level, donorLoad, config);
             // No target → targetLevel 0, result = the donor's own level, always allowed.
             out.add(new TransferOffer(ench, name, level, 0, level, rarityId, cost,
                     TransferBlock.NONE, List.of()));
         }
-        out.sort(Comparator.comparing(TransferOffer::displayName, String.CASE_INSENSITIVE_ORDER));
+        out.sort(Comparator
+                .comparingInt((TransferOffer o) -> o.isTransferable() ? 0 : 1)
+                .thenComparing(TransferOffer::displayName, String.CASE_INSENSITIVE_ORDER));
         return List.copyOf(out);
+    }
+
+    /** How many NON-curse enchantments a donor carries (the extraction "magical load"). */
+    private static int nonCurseCount(@NotNull Map<Enchantment, Integer> donorEnchants,
+                                     @NotNull SuperEnchanterPlugin plugin) {
+        int count = 0;
+        for (Enchantment ench : donorEnchants.keySet()) {
+            if (!plugin.getEcoHook().isCurse(ench)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * The curses riding along with a grindstone operation: every curse on the
+     * donor, when curses-travel is enabled (empty map otherwise). They are applied
+     * on top of whatever the player takes — to the target on transfer (if the
+     * curse can live on it) and into the book on extraction.
+     */
+    @NotNull
+    public static Map<Enchantment, Integer> curseRiders(@Nullable ItemStack donor,
+                                                        @NotNull SuperEnchanterPlugin plugin) {
+        if (donor == null || donor.getType().isAir()
+                || !plugin.getPluginConfig().isTransferCursesTravel()) {
+            return Map.of();
+        }
+        final Map<Enchantment, Integer> riders = new java.util.LinkedHashMap<>();
+        for (Map.Entry<Enchantment, Integer> e : EnchantmentHelper.getEnchantments(donor).entrySet()) {
+            if (plugin.getEcoHook().isCurse(e.getKey())) {
+                riders.put(e.getKey(), e.getValue());
+            }
+        }
+        return riders;
     }
 
     /** Builds an enchanted book holding the extracted enchantment at the given level. */
@@ -260,6 +324,17 @@ public final class TransferLogic {
         return book;
     }
 
+    /** Stores the rider curses in an extracted book (books accept any enchantment). */
+    @NotNull
+    public static ItemStack applyRidersToBook(@NotNull ItemStack book,
+                                              @NotNull Map<Enchantment, Integer> riders) {
+        ItemStack out = book;
+        for (Map.Entry<Enchantment, Integer> rider : riders.entrySet()) {
+            out = EnchantmentHelper.applyEnchantment(out, rider.getKey(), rider.getValue());
+        }
+        return out;
+    }
+
     // ── Icon rendering ──────────────────────────────────────────────────────
 
     /**
@@ -273,6 +348,15 @@ public final class TransferLogic {
                                             @NotNull Player player,
                                             @NotNull SuperEnchanterPlugin plugin) {
         final MessagesConfig msg = plugin.getMessages();
+
+        if (offer.block() == TransferBlock.CURSE_RIDER) {
+            // Donor curse with curses-travel on: unselectable, always rides along.
+            return new ItemBuilder(Material.WITHER_SKELETON_SKULL)
+                    .name(msg.format("transfer.offer-curse-rider-name",
+                            Map.of("{name}", offer.displayName())))
+                    .lore(msg.rawList("transfer.offer-curse-rider-lore"))
+                    .build();
+        }
 
         if (!offer.isTransferable()) {
             final List<String> lore = new ArrayList<>();

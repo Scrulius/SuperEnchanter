@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 17
+config-version: 18
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -423,6 +423,25 @@ transfer:
   # (la base ×N); el 'max-cost' de abajo capa el importe FINAL, también extrayendo
   # (antes el multiplicador se aplicaba después del cap y lo saltaba en silencio).
   extract-cost-multiplier: 2.0
+
+  # Tasa por CARGA MÁGICA (anti "ítem portador" industrial): el multiplicador de
+  # extracción crece con cuántos encantamientos NO-maldición tiene el donante EN TOTAL
+  # (los elijas o no): mult = extract-cost-multiplier + extract-load-per-enchant × (N−1).
+  # Rescatar 1 encantamiento de un pico viejo apenas lo nota (×2); vaciar una "espada
+  # de palo" cargada con 5 a libros sale a ×6 — el uso industrial paga impuesto, el
+  # rescate honesto no. Solo aplica a la extracción a libro; transferir ítem→ítem
+  # (mejorar tu equipo) NO lleva esta tasa. 0 = desactivada.
+  extract-load-per-enchant: 1.0
+
+  # Maldiciones VIAJERAS (anti "ítem portador" cortafuegos): las maldiciones del
+  # donante acompañan SIEMPRE a la magia que te llevas — se pegan al destino al
+  # transferir (si pueden vivir en él), se almacenan en el libro al extraer, y el
+  # yunque las aplica al fundir un libro/sacrificio maldito (si no, fundir limpiaría
+  # la maldición en silencio). "La maldición no está en el objeto, está en la magia":
+  # encantar sobre un ítem basura ya no te esconde del riesgo — purificas con el
+  # Sello o lo pierdes todo. false = comportamiento antiguo (la maldición muere con
+  # el donante y el yunque la rechaza).
+  curses-travel: true
 
   # Moneda del coste: XP, VAULT o PLAYER_POINTS.
   cost-type: XP

@@ -69,6 +69,8 @@ anvil:
   purify-header: "<#5EF1FF><bold>Se eliminarán las maldiciones:</bold>"
   purify-entry: "<#FF4D4D> ☠ {enchantment}"
   purify-free: "<#43E97B>Gratis"
+  # Maldiciones viajeras (transfer.curses-travel): el sacrificio maldito las pega al resultado.
+  curse-rider-header: "<#FF4D4D><bold>Maldiciones que viajarán al resultado:</bold>"
 
   # Insufficient funds
   insufficient-xp: "<#FF6B6B>¡No tienes suficiente experiencia! <#A8B2D1>Necesitas <#FFB347>{cost}"
@@ -287,6 +289,15 @@ transfer:
   blocked-already-owned: "<#FF6B6B>✘ El destino ya tiene ese nivel o uno superior"
   blocked-not-applicable: "<#FF6B6B>✘ No se puede aplicar a este objeto"
 
+  # Maldición del donante (curses-travel): no se elige — viaja SIEMPRE con la magia.
+  offer-curse-rider-name: "<#FF4D4D><bold>☠ {name}</bold>"
+  offer-curse-rider-lore:
+    - "<#A8B2D1>La maldición <#FF4D4D>no se puede dejar atrás<#A8B2D1>:"
+    - "<#A8B2D1>viaja con la magia que te lleves."
+    - ""
+    - "<#6C7293>(Cúrala después en el yunque con"
+    - "<#6C7293>un Sello Purificador.)"
+
   # Botón de transferir.
   button-ready-name: "<gradient:#43E97B:#38D9A9><bold>▶ Transferir</bold></gradient>"
   button-ready-lore:
@@ -309,12 +320,17 @@ transfer:
     - "<#FFD93D>⚠ <#FF6B6B>El donante (y lo no elegido) se destruye."
     - "<#FFD93D>▶ <#43E97B>Clic para extraer"
 
+  # Línea extra del botón cuando hay maldiciones que viajarán con la operación.
+  button-curse-warning: "<#FF4D4D>☠ <#A8B2D1>{count} maldición(es) viajará(n) con la magia."
+
   # Action bars.
   cooldown: "<#FF6B6B>¡Espera un momento antes de volver a transferir!"
   select-first: "<#FF6B6B>✘ <#A8B2D1>Selecciona al menos un encantamiento."
   cannot-select: "<#FF6B6B>✘ <#A8B2D1>Ese encantamiento no se puede transferir."
-  success: "<#43E97B>✔ <#E8E8FF>{count} <#43E97B>encantamiento(s) transferido(s) al destino"
-  extract-success: "<#43E97B>✔ <#E8E8FF>{count} <#43E97B>encantamiento(s) extraído(s) a un libro"
+  success: "<#43E97B>✔ <#E8E8FF>{count} <#43E97B>encantamiento(s) transferido(s) al destino{curses}"
+  extract-success: "<#43E97B>✔ <#E8E8FF>{count} <#43E97B>encantamiento(s) extraído(s) a un libro{curses}"
+  # Sufijo del action bar cuando viajaron maldiciones ("" si ninguna).
+  curse-suffix: " <#FF4D4D>☠ +{count} maldición(es)"
 
   # Fondos insuficientes ({cost} y {balance} ya formateados por moneda).
   insufficient-xp: "<#FF6B6B>✘ <#A8B2D1>No tienes suficiente XP. Necesitas <#FFB347>{cost}<#A8B2D1> (tienes {balance})."
