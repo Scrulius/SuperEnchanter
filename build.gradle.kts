@@ -30,7 +30,7 @@ dependencies {
     compileOnly("com.willfp:EcoSkills:+")
 
     // MythicMobs (softdepend) - librerías encantadas (bloques marcados)
-    compileOnly(files("C:/Users/Knopp/Desktop/server paper testeos/plugins/MythicMobsPremium-5.12.1-SNAPSHOT.jar"))
+    compileOnly(files("C:/Users/Knopp/Desktop/server paper testeos/plugins/MythicMobsPremium-5.13.0-SNAPSHOT.jar"))
 
     // SuperCore (softdepend) - puente a EcoSkills para la skill Magia (MagiaService).
     // Referencia el jar del plugin hermano; degrada solo si SuperCore no está en runtime.
