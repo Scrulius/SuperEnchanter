@@ -29,16 +29,21 @@ dependencies {
     compileOnly("com.willfp:Talismans:+")
     compileOnly("com.willfp:EcoSkills:+")
 
+    // Jars locales por comodín (fileTree) en vez de nombre exacto: al actualizar el plugin
+    // cambia la versión en el nombre del jar y un path fijo rompería el build. OJO: no dejes
+    // DOS versiones del mismo plugin en la carpeta o ambas entrarían al classpath.
+    val serverPlugins = "C:/Users/Knopp/Desktop/server paper testeos/plugins"
+
     // MythicMobs (softdepend) - librerías encantadas (bloques marcados)
-    compileOnly(files("C:/Users/Knopp/Desktop/server paper testeos/plugins/MythicMobsPremium-5.13.0-SNAPSHOT.jar"))
+    compileOnly(fileTree(serverPlugins) { include("MythicMobs*.jar") })
 
     // SuperCore (softdepend) - puente a EcoSkills para la skill Magia (MagiaService).
     // Referencia el jar del plugin hermano; degrada solo si SuperCore no está en runtime.
-    compileOnly(files("C:/Users/Knopp/plugins/SuperCore/build/libs/SuperCore-1.0.0.jar"))
+    compileOnly(fileTree("C:/Users/Knopp/plugins/SuperCore/build/libs") { include("SuperCore-*.jar") })
 
     // PlaceholderAPI (softdepend) - expone los bonus de Magia (%superenchanter_magia_*%)
     // para que la descripción de la skill (y scoreboards, etc.) muestren valores reales.
-    compileOnly(files("C:/Users/Knopp/Desktop/server paper testeos/plugins/PlaceholderAPI-2.12.2.jar"))
+    compileOnly(fileTree(serverPlugins) { include("PlaceholderAPI-*.jar") })
 
     // Vault (softdepend) - economía monetaria
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
