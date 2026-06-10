@@ -83,6 +83,12 @@ public class AnvilGUI extends AbstractCustomGUI {
     }
 
     @Override
+    @NotNull
+    protected dev.scrulius.superenchanter.config.SoundEffect getOpenSound() {
+        return config.getGuiOpenAnvilSound();
+    }
+
+    @Override
     protected void fillDecoration() {
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, FRAME);

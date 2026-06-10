@@ -156,6 +156,9 @@ public final class PluginConfig {
     private SoundEffect extractSuccessSound;
     private SoundEffect errorSound;
     private SoundEffect guiOpenSound;
+    private SoundEffect guiOpenEnchantingSound;
+    private SoundEffect guiOpenAnvilSound;
+    private SoundEffect guiOpenTransferSound;
     private SoundEffect guiCloseSound;
     private SoundEffect buttonClickSound;
 
@@ -576,8 +579,17 @@ public final class PluginConfig {
     /** @return the sound played on an error */
     public @NotNull SoundEffect getErrorSound() { return errorSound; }
 
-    /** @return the sound played when a GUI opens */
+    /** @return the generic sound played when a GUI opens (fallback for menus without a themed one) */
     public @NotNull SoundEffect getGuiOpenSound() { return guiOpenSound; }
+
+    /** @return the sound played when the enchanting table GUI opens (the table's magical whoosh) */
+    public @NotNull SoundEffect getGuiOpenEnchantingSound() { return guiOpenEnchantingSound; }
+
+    /** @return the sound played when the anvil GUI opens (the anvil's metallic clonk) */
+    public @NotNull SoundEffect getGuiOpenAnvilSound() { return guiOpenAnvilSound; }
+
+    /** @return the sound played when the transfer/grindstone GUI opens (the grindstone's grinding) */
+    public @NotNull SoundEffect getGuiOpenTransferSound() { return guiOpenTransferSound; }
 
     /** @return the sound played when a GUI closes */
     public @NotNull SoundEffect getGuiCloseSound() { return guiCloseSound; }
@@ -1005,6 +1017,10 @@ public final class PluginConfig {
         extractSuccessSound = parseSound("extract-success", "block.amethyst_block.chime");
         errorSound = parseSound("error", "entity.villager.no");
         guiOpenSound = parseSound("gui-open", "block.barrel.open");
+        // Themed open sounds — each station sounds like itself when its menu opens.
+        guiOpenEnchantingSound = parseSound("gui-open-enchanting", "block.enchantment_table.use");
+        guiOpenAnvilSound = parseSound("gui-open-anvil", "block.anvil.place");
+        guiOpenTransferSound = parseSound("gui-open-transfer", "block.grindstone.use");
         guiCloseSound = parseSound("gui-close", "block.barrel.close");
         buttonClickSound = parseSound("button-click", "ui.button.click");
     }

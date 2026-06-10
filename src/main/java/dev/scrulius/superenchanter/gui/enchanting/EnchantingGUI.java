@@ -119,6 +119,11 @@ public final class EnchantingGUI extends AbstractCustomGUI {
     }
 
     @Override
+    protected @NotNull dev.scrulius.superenchanter.config.SoundEffect getOpenSound() {
+        return plugin.getPluginConfig().getGuiOpenEnchantingSound();
+    }
+
+    @Override
     protected void fillDecoration() {
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, FILLER_PANE);

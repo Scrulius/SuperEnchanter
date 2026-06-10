@@ -7,7 +7,7 @@
 # =============================================================
 # Marcador de versión interno — no editar. Al actualizar el plugin, las claves
 # nuevas se fusionan automáticamente sin pisar tus valores.
-config-version: 18
+config-version: 19
 
 # ─────────────────────────────────────────────
 # SALVAVIDAS DE ARRANQUE
@@ -573,9 +573,16 @@ sounds:
   transfer-success: { key: block.amethyst_block.chime,     volume: 1.0, pitch: 0.8 }
   extract-success:  { key: block.amethyst_block.chime,     volume: 1.0, pitch: 1.4 }
   error:            { key: entity.villager.no,             volume: 1.0, pitch: 1.0 }
-  # Abrir/cerrar menú con algo más sutil que un cofre.
+  # Abrir/cerrar menú genérico (usado por menús sin sonido temático, p.ej. el audit).
   gui-open:         { key: block.barrel.open,              volume: 0.8, pitch: 1.1 }
   gui-close:        { key: block.barrel.close,             volume: 0.8, pitch: 1.1 }
+  # Sonidos de APERTURA temáticos: cada estación suena a sí misma al abrir su menú.
+  #   mesa  → el "woosh" mágico de la mesa de encantamientos
+  #   yunque → el golpe metálico de colocar un yunque
+  #   afilador (muela) → el zumbido de afilar de la piedra de afilar
+  gui-open-enchanting: { key: block.enchantment_table.use, volume: 0.7, pitch: 0.9 }
+  gui-open-anvil:      { key: block.anvil.place,           volume: 0.6, pitch: 0.8 }
+  gui-open-transfer:   { key: block.grindstone.use,        volume: 0.8, pitch: 1.0 }
   # Clicks de navegación dentro de los menús.
   button-click:     { key: ui.button.click,               volume: 0.7, pitch: 1.2 }
 

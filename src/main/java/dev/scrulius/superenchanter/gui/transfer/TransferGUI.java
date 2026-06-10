@@ -91,6 +91,11 @@ public final class TransferGUI extends AbstractCustomGUI {
     }
 
     @Override
+    protected @NotNull dev.scrulius.superenchanter.config.SoundEffect getOpenSound() {
+        return plugin.getPluginConfig().getGuiOpenTransferSound();
+    }
+
+    @Override
     protected void fillDecoration() {
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, FRAME);

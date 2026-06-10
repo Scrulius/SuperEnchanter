@@ -112,7 +112,18 @@ public abstract class AbstractCustomGUI implements InventoryHolder {
     public void open() {
         ACTIVE_GUIS.put(player.getUniqueId(), this);
         player.openInventory(inventory);
-        plugin.getPluginConfig().getGuiOpenSound().play(player);
+        getOpenSound().play(player);
+    }
+
+    /**
+     * The sound played when this GUI opens. Defaults to the generic {@code gui-open}
+     * sound; the enchanting table, anvil and grindstone menus override it so each
+     * station sounds like itself.
+     *
+     * @return the open sound for this GUI
+     */
+    protected @NotNull dev.scrulius.superenchanter.config.SoundEffect getOpenSound() {
+        return plugin.getPluginConfig().getGuiOpenSound();
     }
 
     /**

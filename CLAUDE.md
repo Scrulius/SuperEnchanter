@@ -594,9 +594,10 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
 
 ### Config
 - Auto-merge: `ConfigUpdater` añade claves nuevas que falten (sin pisar valores del usuario),
-  conserva comentarios. `config-version: 18`. Corre en cada reload. La **v18 (2026-06)** solo AÑADE
-  claves (`transfer.curses-travel`, `transfer.extract-load-per-enchant` + mensajes de rider) →
-  entran solas por auto-merge, sin regenerar. ⚠️ El rediseño hardcore
+  conserva comentarios. `config-version: 19`. Corre en cada reload. La **v19 (2026-06)** solo AÑADE
+  los sonidos de apertura temáticos (`sounds.gui-open-{enchanting,anvil,transfer}`) → entran solos por
+  auto-merge. La **v18 (2026-06)** solo AÑADE claves (`transfer.curses-travel`,
+  `transfer.extract-load-per-enchant` + mensajes de rider) → entran solas por auto-merge, sin regenerar. ⚠️ El rediseño hardcore
   **rebalanceó valores existentes** (`success-chance.by-rarity`, `curse-chance.*`, y TODAS las curvas
   de coste al pasar a PUNTOS de XP — mesa/yunque/transfer) que el auto-merge NO pisa, y dejó claves
   muertas (boosters, reagents, rarity-cost-type con divino) → **regenerar `config.yml`** en el server
@@ -672,6 +673,12 @@ Textos en `messages.yml → command.*`. Permiso admin `superenchanter.admin` (de
   objetos `{ key, volume, pitch }` (o clave suelta) — sección `sounds`, incl. `button-click` para
   navegación. Las partículas (`enchant-success`, `library-ambient` con `period-ticks`) viven en la
   sección `particles` con `{ enabled, type, count, offset, speed }`. Nada de esto va ya hardcodeado.
+- **Sonido de apertura TEMÁTICO por GUI** (`gui-open-{enchanting,anvil,transfer}`): cada estación suena
+  a sí misma al abrir su menú — mesa = `block.enchantment_table.use` (woosh mágico), yunque =
+  `block.anvil.place` (clonk metálico), afilador/muela = `block.grindstone.use` (zumbido de afilar).
+  Patrón: `AbstractCustomGUI.open()` llama a `getOpenSound()` **overridable** (default = `gui-open`
+  genérico de barril, lo usa el AuditGUI); las tres GUIs lo sobrescriben con su clave. `gui-close`
+  sigue compartido (barril).
 - **Sonidos**: claves namespaced (`block.anvil.use`), NO nombres de enum (bug antiguo: todos caían
   a villager.no).
 - **`/se reload` limpia las caches de `EcoEnchantsHook`** (`clearCaches()`: wrap/baseName/requirement).
