@@ -35,6 +35,8 @@ por GUIs custom estilo Hypixel SkyBlock, con multi-economía, anti-dupe, y "libr
 > ```
 > El repo es **https://github.com/Scrulius/SuperEnchanter** (privado). Un mensaje de commit claro
 > basta — no hace falta rama ni PR, push directo a `master`.
+> **🚫 SIN co-autoría de Claude**: nunca añadas `Co-Authored-By: Claude ...` a los commits ni PRs
+> (norma GLOBAL del autor — aplica a todos sus proyectos, presentes y futuros).
 
 ---
 
