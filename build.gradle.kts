@@ -14,7 +14,6 @@ version = "1.0.0"
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")     // Paper API
-    maven("https://repo.auxilor.io/repository/maven-public/")     // EcoEnchants
     maven("https://jitpack.io")                                    // Vault
     maven("https://repo.rosewooddev.io/repository/public/")       // PlayerPoints
 }
@@ -23,16 +22,19 @@ dependencies {
     // Paper API 26.1.2 (versionado year-based con build identifier; usa .build.+ para el último)
     compileOnly("io.papermc.paper:paper-api:26.1.2.build.69-stable")
 
-    // Eco Framework and Premium Plugins (Latest via Maven)
-    compileOnly("com.willfp:eco:+")
-    compileOnly("com.willfp:EcoEnchants:+")
-    compileOnly("com.willfp:Talismans:+")
-    compileOnly("com.willfp:EcoSkills:+")
-
     // Jars locales por comodín (fileTree) en vez de nombre exacto: al actualizar el plugin
     // cambia la versión en el nombre del jar y un path fijo rompería el build. OJO: no dejes
     // DOS versiones del mismo plugin en la carpeta o ambas entrarían al classpath.
     val serverPlugins = "C:/Users/Knopp/Desktop/server paper testeos/plugins"
+
+    // Familia eco (eco + EcoEnchants + EcoSkills) — contra los jars DEL SERVER, no el repo
+    // de Auxilor con "+": el 2026-07 Auxilor publicó las 2026.x con los paquetes
+    // reorganizados y el comodín rompía el build sin tocar código (le pasó a SuperMines).
+    // Compilar contra lo que corre el server = nunca desincronizado.
+    // (Talismans se quitó: el código no importa nada de ahí.)
+    compileOnly(fileTree(serverPlugins) { include("eco-*.jar") })
+    compileOnly(fileTree(serverPlugins) { include("EcoEnchants*.jar") })
+    compileOnly(fileTree(serverPlugins) { include("EcoSkills*.jar") })
 
     // MythicMobs (softdepend) - librerías encantadas (bloques marcados)
     compileOnly(fileTree(serverPlugins) { include("MythicMobs*.jar") })
