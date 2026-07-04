@@ -16,6 +16,7 @@ description: >
 softdepend:
   - eco
   - EcoEnchants
+  - Talismans
   - EcoSkills
   - Vault
   - PlayerPoints

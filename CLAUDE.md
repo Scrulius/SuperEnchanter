@@ -59,14 +59,15 @@ por GUIs custom estilo Hypixel SkyBlock, con multi-economía, anti-dupe, y "libr
 - Tras tocar tests/fórmulas, `test` basta; para desplegar, `jar` y copiar al server de pruebas.
 
 ### Dependencias
-- **Familia eco (eco + EcoEnchants + EcoSkills)** = compileOnly por **fileTree contra los jars
-  del server de pruebas** (`eco-*.jar` / `EcoEnchants*.jar` / `EcoSkills*.jar` en
-  `Desktop\server paper testeos\plugins`), NO coordenadas `com.willfp:*:+` del repo de Auxilor
-  — el 2026-07 Auxilor publicó las 2026.x con paquetes reorganizados y el comodín `+` rompía
-  el build sin tocar código (mismo patrón que SuperMines/SuperCore). Compilar contra lo que
-  corre el server = nunca desincronizado. ⚠️ No dejar DOS versiones del mismo jar en la carpeta.
-  EcoEnchants sigue siendo dependencia REQUERIDA en runtime (softdepend + fail-safe propio),
-  vía su **API real** (no reflexión). Talismans se ELIMINÓ (el código no importaba nada de ahí).
+- **Familia eco (eco + EcoEnchants + EcoSkills + Talismans)** = compileOnly por **fileTree
+  contra los jars del server de pruebas** (`eco-*.jar` / `EcoEnchants*.jar` / `EcoSkills*.jar` /
+  `Talismans*.jar` en `Desktop\server paper testeos\plugins`), NO coordenadas `com.willfp:*:+`
+  del repo de Auxilor — el 2026-07 Auxilor publicó las 2026.x con paquetes reorganizados y el
+  comodín `+` rompía el build sin tocar código (mismo patrón que SuperMines/SuperCore). Compilar
+  contra lo que corre el server = nunca desincronizado. ⚠️ No dejar DOS versiones del mismo jar
+  en la carpeta. EcoEnchants sigue siendo dependencia REQUERIDA en runtime (softdepend +
+  fail-safe propio), vía su **API real** (no reflexión). ⚠️ **Talismans se QUEDA** aunque hoy no
+  haya imports: el autor la va a usar seguro — NO eliminarla del build ni del softdepend.
 - **MythicMobs** = `softdepend`, compileOnly vía fileTree al jar del server de pruebas
   (para librerías encantadas).
 - Soft: Vault, PlayerPoints. (PacketEvents fue ELIMINADO — ver decisiones.)

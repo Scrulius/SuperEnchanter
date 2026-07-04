@@ -27,14 +27,15 @@ dependencies {
     // DOS versiones del mismo plugin en la carpeta o ambas entrarían al classpath.
     val serverPlugins = "C:/Users/Knopp/Desktop/server paper testeos/plugins"
 
-    // Familia eco (eco + EcoEnchants + EcoSkills) — contra los jars DEL SERVER, no el repo
-    // de Auxilor con "+": el 2026-07 Auxilor publicó las 2026.x con los paquetes
+    // Familia eco (eco + EcoEnchants + EcoSkills + Talismans) — contra los jars DEL SERVER,
+    // no el repo de Auxilor con "+": el 2026-07 Auxilor publicó las 2026.x con los paquetes
     // reorganizados y el comodín rompía el build sin tocar código (le pasó a SuperMines).
     // Compilar contra lo que corre el server = nunca desincronizado.
-    // (Talismans se quitó: el código no importa nada de ahí.)
+    // (Talismans aún sin imports, pero SE VA A USAR — no la quites.)
     compileOnly(fileTree(serverPlugins) { include("eco-*.jar") })
     compileOnly(fileTree(serverPlugins) { include("EcoEnchants*.jar") })
     compileOnly(fileTree(serverPlugins) { include("EcoSkills*.jar") })
+    compileOnly(fileTree(serverPlugins) { include("Talismans*.jar") })
 
     // MythicMobs (softdepend) - librerías encantadas (bloques marcados)
     compileOnly(fileTree(serverPlugins) { include("MythicMobs*.jar") })
