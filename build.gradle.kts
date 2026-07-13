@@ -25,7 +25,7 @@ dependencies {
     // Jars locales por comodín (fileTree) en vez de nombre exacto: al actualizar el plugin
     // cambia la versión en el nombre del jar y un path fijo rompería el build. OJO: no dejes
     // DOS versiones del mismo plugin en la carpeta o ambas entrarían al classpath.
-    val serverPlugins = "C:/Users/Knopp/Desktop/server paper testeos/plugins"
+    val serverPlugins = "C:/Users/Knopp/Desktop/Cosas importantes/server paper testeos/plugins"
 
     // Familia eco (eco + EcoEnchants + EcoSkills + Talismans) — contra los jars DEL SERVER,
     // no el repo de Auxilor con "+": el 2026-07 Auxilor publicó las 2026.x con los paquetes

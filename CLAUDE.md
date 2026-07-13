@@ -61,7 +61,7 @@ por GUIs custom estilo Hypixel SkyBlock, con multi-economía, anti-dupe, y "libr
 ### Dependencias
 - **Familia eco (eco + EcoEnchants + EcoSkills + Talismans)** = compileOnly por **fileTree
   contra los jars del server de pruebas** (`eco-*.jar` / `EcoEnchants*.jar` / `EcoSkills*.jar` /
-  `Talismans*.jar` en `Desktop\server paper testeos\plugins`), NO coordenadas `com.willfp:*:+`
+  `Talismans*.jar` en `Desktop\Cosas importantes\server paper testeos\plugins`), NO coordenadas `com.willfp:*:+`
   del repo de Auxilor — el 2026-07 Auxilor publicó las 2026.x con paquetes reorganizados y el
   comodín `+` rompía el build sin tocar código (mismo patrón que SuperMines/SuperCore). Compilar
   contra lo que corre el server = nunca desincronizado. ⚠️ No dejar DOS versiones del mismo jar
@@ -76,14 +76,14 @@ por GUIs custom estilo Hypixel SkyBlock, con multi-economía, anti-dupe, y "libr
 
 ## Servidor de pruebas
 
-`C:\Users\Knopp\Desktop\server paper testeos\` — Paper 26.1.2 + Java 25 (ver `start.bat`).
+`C:\Users\Knopp\Desktop\Cosas importantes\server paper testeos\` — Paper 26.1.2 + Java 25 (ver `start.bat`).
 Desplegar = copiar el jar a `plugins/`. **NUNCA hot-swap con el server encendido**
 (corrompe el classloader de clases no cargadas → `ClassNotFoundException` luego;
 nos pasó con AnvilGUI). Siempre **reinicio completo** tras desplegar.
 
 > **🚚 NORMA: copia SIEMPRE el jar al server de pruebas al terminar.** Tras un `./gradlew.bat jar`
 > exitoso, copia `build/libs/SuperEnchanter-1.0.0.jar` a
-> `C:\Users\Knopp\Desktop\server paper testeos\plugins\` (sobrescribiendo) como último paso del
+> `C:\Users\Knopp\Desktop\Cosas importantes\server paper testeos\plugins\` (sobrescribiendo) como último paso del
 > trabajo, sin que el autor lo pida. (El server debe reiniciarse para que aplique — no hot-swap.)
 
 ---
